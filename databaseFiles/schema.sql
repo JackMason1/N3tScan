@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    date DATETIME NOT NULL,
+    settings TEXT NOT NULL,
+    data TEXT NOT NULL
+);
+
+
+CREATE TABLE IF NOT EXISTS user (
+    scanType TEXT NOT NULL
+);

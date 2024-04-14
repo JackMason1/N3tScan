@@ -1,0 +1,833 @@
+
+
+        body {
+        font-family: "Lato", sans-serif;
+        position: relative;
+        transition: padding-left .5s;
+        /* background-color: #595e67; */
+        background-color: #35383f;
+        
+
+
+        }
+
+
+        .openbtn {
+        font-size: 20px;
+        cursor: pointer;
+        background-color: #1e1e1e;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        }
+
+        .openbtn:hover {
+        background-color: #444;
+        }
+
+        #main {
+            transition: margin-left .5s, padding-left .5s;
+            padding: 25px 16px 16px;
+            max-width: 1060px;
+            padding-top: 0;
+            margin: 0 auto; /* Keep as is, as it centers #main */
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: calc(100% - 250px); /* Subtract the width of the sidebar */
+        }
+
+        .openbtn {
+            position: absolute;
+            top: 0;
+            left: 0;
+            margin: 10px;
+            z-index: 1000;
+        }
+
+        @media screen and (max-height: 450px) {
+            .sidebar {padding-top: 15px;}
+            .sidebar a {font-size: 18px;}
+        }
+
+        @media screen and (max-width: 600px) {
+            #main {
+                padding: 100px 10px 10px;
+                max-width: 100%;
+            }
+        }
+        @media screen and (min-width: 1000px) {
+            .openbtn {
+                display: none;
+            }
+            
+        }
+
+
+
+
+
+
+
+
+
+        /* ---------- Form CSS --------- */
+
+        #form-container {
+            width: 400px;
+            padding: 20px;
+            font-family: 'Arial', sans-serif;
+            border-radius: 10px; /* Rounded corners for the container */
+            display: flex;
+            flex-direction: column;
+            gap: 20px; /* Space between elements */
+            
+
+        }
+    
+        
+        .input-and-buttons {
+            display: flex; /* Aligns items horizontally */
+            align-items: flex-end; /* Aligns items at the bottom */
+            border: 1px solid #a2a2a2;
+            border-radius: 10px; 
+            gap:20px;
+        }
+
+    
+        
+        #domain-input {
+            flex-grow: 1; /* Takes up remaining space */
+            outline: none;
+            border: none;
+            background: #35383f;
+            font-size: 17.5px;
+            color: white;
+            resize: none; /* No resize handle */
+            align-content: center;
+        }
+
+
+        
+        
+        #fileButton, #submitButton {
+            background-color: #35383f; /* Gray background */
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 25px;
+            position: relative; /* Needed for absolute positioning of ::after */
+        }
+        
+        #fileButton:hover, #submitButton:hover {
+            background-color: #3a3c44; /* Slightly darker gray on hover */
+            border: 1px solid #2fb73d; /* Green border */
+        }
+        
+        #fileButton::after, #submitButton::after {
+            content: attr(data-hover-text);
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgb(40, 40, 40);
+            padding: 5px;
+            border: 1px solid rgb(40, 40, 40);
+            border-radius: 5px;
+            white-space: nowrap;
+            font-size: 12px;
+            visibility: hidden;
+            color: #ccc;
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        
+        #fileButton:hover::after, #submitButton:hover::after {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .file-button span {
+            display: none; /* If needed */
+        }
+        
+        #fileInput {
+            display: none; /* If needed */
+        }
+        
+        
+        #submitButton:hover {
+            border: 1px solid #28b647;
+            background-color: #06ad2a;
+        }
+        
+
+        #scanNameInput {
+            font-size: 2.5em; /* This sets the font size equivalent to h1 */
+            border: none; /* Removes the border */
+            outline: none; /* Removes the outline */
+            outline: none;
+            width: 100%; /* Full width */
+            background: transparent; /* Makes the background transparent */
+            color: #1e1e1e;
+            margin-bottom: 0.67em; 
+            text-align: center;  
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
+        /* ---------- Accordion CSS ---------- */
+
+        .accordion,
+        .panel {
+            box-sizing: border-box; /* Include padding and borders in the width */
+            width: 1000px;
+        }
+
+        .accordion {
+            /* background-color: #3a3a3a; */
+            background-color: #232324;
+            color: rgb(235, 235, 235);
+            cursor: pointer;
+            padding: 15px 18px; /* Padding adjusted for content */
+            height: 75px; /* Fixed height for the accordion */
+            width: 1000px;
+            border: none;
+            text-align: center;
+            outline: none;
+            font-size: 17.5px;
+            font-weight:100;
+            transition: background-color 0.4s ease;
+            border-radius: 5px; /* Rounded corners */
+            margin-top: 15px; /* Space between accordions */
+        }
+
+        .panel {
+            background-color: #232324;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out, padding 0.5s ease-out;
+            max-height: 0; /* Initially no height */
+            padding: 0 18px; /* Same padding as accordion */
+            width: 1000px; /* Adjust for padding */
+            color: rgb(235, 235, 235);
+            /* No margin-bottom here, to avoid adding extra space after the panel */
+        }
+
+        /* Adjustments when active */
+        .accordion.active {
+            background-color: #555; /* Lighter background for active state */
+            border-radius: 5px 5px 0 0; /* Top corners rounded, bottom corners squared */
+        }
+
+        .accordion.active + .panel {
+            max-height: none; /* Adjust based on content */
+            padding-top: 18px;
+            padding-bottom: 18px;
+            border-radius: 0 0 10px 10px; /* Bottom corners rounded */
+        }
+
+
+
+
+        /* ---------- table CSS ---------- */
+
+
+
+        
+        table {
+        width: 100%; /* Full width */
+        border-collapse: separate; /* Allows for border-radius to apply */
+        border-spacing: 0; /* Removes the default spacing between cells */
+        margin: 20px auto; /* Center table with automatic margins */
+        background-color: #2a2a2a; /* Dark background color */
+        color: #e5e5e5; /* Light font color */
+        border-radius: 5px; /* Rounded corners for the table */
+        overflow: hidden; /* Ensures the content does not flow outside the border-radius */
+        margin-top: 0;
+        }
+
+        th, td {
+            max-width: 200px;
+            border: 1px solid rgb(46, 46, 46); /* Darker border color for better visibility on dark background */
+            padding: 10px 15px; /* Consistent padding for th and td */
+            text-align: center; /* Centers text horizontally */
+            vertical-align: middle; /* Centers text vertically */
+            word-wrap: break-word; /* Breaks long words to prevent overflow */
+            white-space: normal; /* Allows text to wrap onto multiple lines */
+        }
+
+        th {
+        background-color: #1a1a1a; /* Darker header background for better separation */
+        font-weight: bold; /* Bold font weight for headers */
+        }
+
+        tr {
+        background-color: #2a2a2a; /* Background color for rows, same as table for a cohesive look */
+        }
+
+        tr:first-child th:first-child {
+        border-top-left-radius: 5px; /* Rounded corner for the first cell of the header */
+        }
+
+        tr:first-child th:last-child {
+        border-top-right-radius: 5px; /* Rounded corner for the last cell of the header */
+        }
+
+        tr:last-child td:first-child {
+        border-bottom-left-radius: 5px; /* Rounded corner for the first cell of the last row */
+        }
+
+        tr:last-child td:last-child {
+        border-bottom-right-radius: 5px; /* Rounded corner for the last cell of the last row */
+        }
+
+        tr:nth-child(even) {
+        background-color: #404040; /* Slightly lighter background for even rows for better visibility */
+        }
+
+        
+
+
+        /* ---------- Loader CSS ---------- */
+
+
+
+        .loader {
+            border: 5px solid #f3f3f3; /* Light grey, 5px thick */
+            border-top: 5px solid gray; /* Gray top border, 5px thick */
+            border-radius: 50%;
+            width: 20px; /* Increased width to accommodate thicker border */
+            height: 20px; /* Increased height to match */
+            animation: spin 1s linear infinite;
+            margin: auto; /* Center the loader */
+            display: block; /* Makes the margin auto centering work */
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        
+
+
+
+
+        /*---------- Side Bar CSS ----------*/
+
+        /* Overall sidebar styles */
+        .sidebar {
+            background-color: #1e1e1e; /* Dark background for the sidebar */
+            color: white;
+            width: 250px; /* Adjust as per your layout */
+            height: 100vh; /* Full-height */
+            position: fixed; /* Fixed Sidebar (stay in place on scroll) */
+            z-index: 1; /* Stay on top */
+            top: 0; /* Stay at the top */
+            left: 0;
+            overflow-x: hidden; /* Disable horizontal scroll */
+            padding-top: 15px;
+            transition: 0.5s;
+
+        }
+
+
+ 
+        
+      
+
+        /* Sidebar header styles */
+        .sidebar-header {
+            padding-bottom: 15px; /* Add padding to the top and bottom */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #333;
+        }
+
+        .closebtn, .new-scan-btn {
+            display: inline-block; /* Display buttons inline */
+            text-decoration: none;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 10px; /* Round the corners */
+            padding: 10px 20px; /* Adjust padding to size the buttons */
+            text-align: center; /* Center the text in buttons */
+            transition: background-color 0.3s, border-color 0.3s;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 15px; /* Adjust font size as needed for .new-scan-btn */
+        }
+        
+        .new-scan-btn {
+            flex-grow: 1; /* Button takes up the available space */
+            margin-left: 10px; /* Add margin to the left */
+            margin-right: 5px; /* Add margin to the right if needed */
+            /* font-size is already set in the shared style */
+        }
+        
+        .closebtn {
+            font-size: 20px; /* Adjust font size for '×' symbol */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: auto; /* Adjust width as needed, or use 'auto' if the fixed width isn't necessary */
+            padding: 8.5px 12.5px; /* Adjust padding to maintain aspect ratio */
+            padding-top: 6.5px;
+            margin-right: 10px; /* Adjust margin if needed */
+            
+        }
+        
+
+        .new-scan-btn:hover {
+            background-color: #2a2a2a; /* Darker shade on hover */
+            border-color: #4CAF50; /* Change border color on hover for effect */
+        }
+
+        .closebtn:hover {
+            background-color: #2a2a2a; /* Darker shade on hover */
+            border-color: #d80b0b; /* Change border color on hover for effect */
+        }
+
+
+        #searchTitle{
+            margin-left: 15px;
+            color: #bbb;
+        }
+        
+        #search-history {
+            list-style-type: none; /* Remove default list styling */
+            padding-left: 0; /* Remove default padding */
+            margin: 0; /* Remove default margin */
+        }
+
+        /* Anchor tags within list styled as buttons */
+        #search-history li a {
+            text-decoration: none; /* No underline */
+            color: rgb(236, 235, 235); /* Light grey color for text */
+            background-color: #1e1e1e; /* Same color as sidebar for button background */
+            display: block; /* Make the whole list item clickable */
+            padding: 15px; /* Padding inside the buttons */
+            border-radius: 10px; /* Rounded corners */
+            transition: background-color 0.3s; /* Smooth transition for hover effect */
+            border: none; /* Remove borders */
+        }
+
+        /* Hover effect on buttons */
+        #search-history li a:hover {
+            background-color: #333; /* Slightly lighter than the button background color */
+        }
+
+        /* Date and name styles */
+        .search-date, .search-name {
+            display: inline-block; /* Aligns date and name on the same line */
+        }
+
+        .search-icon::before {
+            content: "\1F50D"; /* Unicode character for a magnifying glass which can represent 'scan' */
+            margin-right: 8px; /* Space between the icon and the date */
+            /* If you want to use an actual icon, you might need to include a font library like FontAwesome and use its specific content code here */
+        }
+
+        #search-history li a.active-link {
+            background-color: #333; /* Or any other style you prefer */
+        }
+        
+
+
+
+        /* <----- Title -----> */
+
+        #scanNameInput::placeholder {
+            color: #1e1e1e; /* Placeholder text color, change as needed */
+            opacity: 1; /* Make sure the placeholder is fully visible */
+            background: transparent; /* Makes the background transparent */
+        }
+
+
+        .toolName {
+            flex-direction: column;
+            padding-top: 10%;
+        }
+
+        .toolName h1 {
+            margin: 0;
+            padding: 0;
+            font-size: 4em; /* Adjust the size as needed */
+            font-weight: 500;
+            color: #1e1e1e;
+        }
+
+        .toolName .byLine {
+            font-size: 1em; /* Adjust the size as needed */
+            color: #1e1e1e; /* This is just a placeholder color */
+            align-items: center;
+        }
+
+
+
+
+        /* ---------- Settings Menu ----------*/
+
+        .settingsBtn {
+            position: absolute;
+            right: 10px; /* Adjust as needed */
+            top: 10px; /* Adjust as needed */
+            font-size: 24px; /* Adjust as needed */
+            border: none;
+            background: none;
+            cursor: pointer;
+        }
+
+        .settings-menu {
+            background-color: #1e1e1e; /* Dark background for the menu */
+            color: white;
+            width: 300px; /* Adjust as per your layout */
+            height: 100vh; /* Full-height */
+            position: fixed; /* Fixed Position */
+            z-index: 1; /* Stay on top */
+            top: 0; /* Stay at the top */
+            right: 0; /* Align to the right */
+            overflow-x: hidden; /* Disable horizontal scroll */
+            padding-top: 15px;
+            transition: 0.5s;
+        }
+
+
+        .settings-menu-header {
+            padding-bottom: 15px; /* Add padding to the top and bottom */
+            display: flex;
+            align-items: center;
+            justify-content: flex-end; /* Align button to the end (right side) */
+            border-bottom: 1px solid #333;
+        }
+
+
+        .save-close-btn {
+            display: block; /* Make the button a block element to fill the width */
+            width: calc(100% - 20px); /* Assuming 10px margin on each side */
+            margin: 5px 10px; /* Vertical margin 5px, Horizontal margin 10px */
+            height: 40px; /* Match the height of the 'New Scan' button */
+            font-size: 15px; /* Match the font size if necessary */
+            border: 1px solid #555;
+            border-radius: 10px; /* Rounded corners */
+            padding: 10px; /* Adjust padding to match the 'New Scan' button */
+            text-align: center; /* Center the text */
+            color: white; /* Text color */
+            background: none; /* Transparent background */
+            cursor: pointer;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .save-close-btn:hover {
+            background-color: #2a2a2a; /* Darker shade on hover */
+            border-color: #4CAF50; /* Change border color on hover */
+        }
+
+
+
+
+        /* Container for the switches */
+        .switch-container {
+            padding: 20px;
+            padding-top: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Style for the switch label and input */
+        .switch {
+            display: flex;
+            justify-content: space-between; /* Distribute space between text and slider */
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: white;
+        }
+
+        /* Hide the default checkbox */
+        .switch input {
+            display: none;
+        }
+
+        /* Create a custom slider */
+        .switch .slider {
+            position: relative;
+            display: inline-block;
+            width: 60px; /* Width of the slider */
+            height: 30px; /* Height of the slider */
+            background-color: #ccc;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: .4s;
+        }
+
+        /* Color the slider when it's checked */
+        .switch input:checked + .slider {
+            background-color: #4CAF50;
+        }
+
+        /* Create the slider knob */
+        .switch .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px; /* Height of the knob */
+            width: 22px; /* Width of the knob */
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            border-radius: 50%;
+            transition: .4s;
+        }
+
+        /* Adjust the movement of the knob */
+        .switch input:checked + .slider:before {
+            transform: translateX(30px); /* Adjusted to prevent the knob from moving too far */
+        }
+
+        .individual-controls {
+            padding: 20px;
+            border-top: 1px solid #333; /* Separator line */
+            margin-bottom: 10px;
+            
+            
+        }
+        
+        .individual-controls h3 {
+            color: #ccc; /* Color of the title */
+            margin-bottom: 20px; /* Spacing after title */
+            margin-top: 0px;
+        }
+
+
+        label[for="numberInput"] {
+            display: flex;
+            justify-content: space-between; /* Distribute space between text and input */
+            align-items: center;
+            margin-bottom: 10px; /* Match the margin-bottom of the switch class for uniform spacing */
+            font-size: 16px;
+            color: white;
+            
+
+        }
+
+
+        /* Additional styles for number inputs to align with switches */
+        input[type="number"] {
+            display: block; /* Change to block to allow margin to be applied */
+            width: 55px; /* Width to match switch */
+            height: 25px; /* Height to match switch */
+            background-color: #424242; /* Dark grey background */
+            border: 1px solid #3d3d3d; /* Darker grey border */
+            border-radius: 5px; /* Match the border-radius of the slider */
+            color: white;
+            text-align: center;
+            font-size: large;
+            outline: none;
+        }
+
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+
+       
+
+
+
+
+
+
+
+
+        /* ---------- Mark Down Buttons ---------- */
+
+        /* Style for the container of the buttons */
+        .button-container {
+            display: flex; /* Align children (buttons) in a row */
+            width: 100%; /* Container takes full width */
+            padding: 5px; /* Padding inside the container */
+        }
+
+        /* Style for each button */
+        .button-container button {
+            flex: 1; /* Each button flexes to fill the container */
+            margin: 10px; /* Margin around each button */
+            margin-left: 0;
+            margin-top: 0;
+            margin-bottom: 0;
+            border-radius: 5px; /* Rounded corners */
+            padding: 10px; /* Padding inside each button */
+            border: 2px solid rgb(178, 178, 178); /* Border for the button */
+            background-color: #5d5d5d; /* Background color of the button */
+            cursor: pointer; /* Change cursor to pointer on hover */
+            text-align: center; /* Center the text inside the button */
+        }
+
+        /* Additional style for hover effect on buttons */
+        .button-container button:hover {
+            background-color: #413f3f; /* Slightly darker background on hover */
+        }
+
+
+
+        /* ---------- Vulnerbility Report ---------- */
+
+        .table-title-with-buttons {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0;
+        }
+
+        .cvss-red {
+            color: red;
+        }
+
+        .cvss-orange {
+            color: orange;
+        }
+
+        .cvss-yellow {
+            color: yellow;
+            margin-right: 2em;
+        }
+        
+        .cvss-green {
+            color: green;
+        }
+
+        .cvss-blue {
+            color: rgb(0, 191, 255);
+        }
+
+        .markdown-button {
+            width: 45px;
+            height: 45px;
+            text-align: center;
+            border-radius: 10px; /* Rounded corners */
+            background-color:rgb(46, 46, 46);
+            border: 2px solid rgb(62, 62, 62); /* 2px thick border */
+            cursor: pointer; /* Changes cursor to pointer on hover */
+            position: relative; /* Position relative for hover effect positioning */
+            font-size: 15px;
+            margin-left: 5px;
+        }
+        
+        /* Hover effect for the buttons */
+        .markdown-button::after {
+            content: attr(data-hover-text); /* Display text based on data attribute */
+            position: absolute;
+            top: -35px; /* Position above the button */
+            left: 50%;
+            transform: translateX(-50%); /* Center the text */
+            background-color: white;
+            padding: 5px;
+            border: 1px solid black;
+            border-radius: 5px;
+            white-space: nowrap; /* Prevents the text from wrapping */
+            font-size: 12px;
+            visibility: hidden; /* Hide initially */
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s; /* Smooth transition for the tooltip */
+        }
+
+        .markdown-button:hover::after {
+            visibility: visible;
+            opacity: 1;
+        }
+
+
+
+        
+        p{
+            color: rgb(199, 199, 199);
+        }
+
+        p strong, p b {
+            color: rgb(255, 255, 255);
+        }
+
+
+        hr {
+            background-color: #111;
+        }
+
+        .copyable {
+            cursor: pointer;
+        }
+
+        .copyable2 {
+            cursor: pointer;
+        }
+
+
+        /* messageList */
+
+        #messageList {
+            list-style-type: none;
+            padding: 0;
+            font-size: xx-large;
+            color: #1e1e1e;
+            font-weight: 500;
+        }
+
+        .images-border-container {
+            width: 1000px; /* Match the width of the accordions */
+            border: 7.5px solid #232324; /* Thin grey border, same color as accordions */
+            box-sizing: border-box; /* Include padding and border in the width */
+            border-radius: 5px;
+            /* background-color: #3a3a3a; */
+            background-color: #232324;
+
+        }
+        
+        .image-row {
+            display: flex;
+            padding: 0px; /* Adjust spacing as needed */
+        }
+
+        .image-quarter {
+            flex: 0 0 25%; /* 25% width, not growing, not shrinking */
+            max-width: 25%; /* maximum width is also 25% */
+            box-sizing: border-box; /* Include padding and border in the width */
+        }
+
+
+        .image-border {
+            border: 1px solid #3a3a3a;
+        }
+
+
+
+      
+
+       
+   
+        
+        

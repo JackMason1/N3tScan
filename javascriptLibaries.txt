@@ -1,0 +1,158 @@
+Ace Editor: Ace.version: ace-builds
+A-Frame: AFRAME.version: aframe
+Alpine.js: Alpine.version: alpinejs
+Angular: getAllAngularRootElements()[0].attributes["ng-version"]: @angular/core
+AngularJS: angular.version.full: angular
+Anime.js: anime.version: animejs
+Ant Design: AntDesign.version: antd
+Ant Design Vue: AntDesignVue.version: ant-design-vue
+Aurelia: aurelia.host.version: aurelia-framework
+Axios: axios.version: axios
+Babylon.js: BABYLON.Engine.Version: babylonjs
+Babel: Babel.version: @babel/core
+Backbone.js: Backbone.VERSION: backbone
+Bluebird: Bluebird.version: bluebird
+Bootstrap: bootstrap.Alert.VERSION / $.fn.tooltip.Constructor.VERSION: bootstrap
+BootstrapVue: BootstrapVue.version: bootstrap-vue
+Bulma: Bulma.version: bulma
+Buefy: Buefy.version: buefy
+Chai: Chai.version: chai
+Chakra UI: Chakra.version: @chakra-ui/react
+Chart.js: Chart.version: chart.js
+Chalk: chalk.constructor.prototype.constructor.version: chalk
+CodeMirror: CodeMirror.version: codemirror
+Core-js: core.version / window['core-js_shared'].versions[0].version: core-js
+Cypress: Cypress.version: cypress
+Cytoscape: cytoscape.version: cytoscape
+D3: d3.version: d3
+DataTables: $.fn.dataTable.version / $().dataTable.version / jQuery.fn.dataTable.version: datatables.net
+Day.js: dayjs.version: dayjs
+Dojo: dojo.version: dojo
+DOMPurify: DOMPurify.version: dompurify
+Draft.js: Draft.version: draft-js
+Dracula (Syntax Highlight): Dracula.version: dracula-prism
+Dropzone: Dropzone.version: dropzone
+DPlayer: DPlayer.version: dplayer
+EaselJS: createjs.EaselJS.version: easeljs
+EchoJS: Echo.version: laravel-echo
+Electron: process.versions.electron: electron
+Element: Element.version: element-ui
+Ember.js: Ember.VERSION: ember-source
+Enzyme: Enzyme.version: enzyme
+Esbuild: esbuild.version: esbuild
+ExtJS: Ext.getVersion().version / Ext.getVersion('extjs') / Ext.version: extjs
+Fabric.js: fabric.version: fabric
+FancyBox: jQuery.fancybox.version: @fancyapps/fancybox
+Flickity: Flickity.version: flickity
+Formik: Formik.version: formik
+Foundation: Foundation.version: foundation-sites
+FullPage.js: fullpage.version: fullpage.js
+GlideJS: Glide.version: glidejs
+Glide.js: Glide.version: glidejs
+Gatsby: Gatsby.version: gatsby
+GreenSock (GSAP): gsap.version: gsap
+Griddle: Griddle.version: griddle-react
+Gridstack: Gridstack.version: gridstack
+Hammer.js: Hammer.VERSION: hammerjs
+Handsontable: Handsontable.version: handsontable
+Handlebars.js: Handlebars.VERSION: handlebars
+Highcharts: Highcharts.version: highcharts
+Howler.js: Howler.version: howler
+Hyperapp: Hyperapp.version: hyperapp
+Immutable.js: Immutable.version: immutable
+Inferno: Inferno.version: inferno
+Isotope: Isotope.version: isotope-layout
+iScroll: IScroll.version: iscroll
+Jest: Jest.version: jest
+jQuery: jQuery().jquery: jquery
+jQuery Migrate: jQuery.migrateVersion: jquery-migrate
+jQuery UI: jQuery.ui.version / $.ui.version: jquery-ui
+jsPlumb: jsPlumb.version: jsplumb
+JSDoc: JSDoc.version: jsdoc
+Koa: Koa.version: koa
+Knockout.js: ko.version: knockout
+Lerna: Lerna.version: lerna
+Leaflet: L.version: leaflet
+Lazy.js: Lazy.VERSION: lazy.js
+LESS: LESS.version: less
+Lightbox2: Lightbox.version: lightbox2
+Lodash: _.VERSION: lodash
+Lottie: Lottie.version: lottie-web
+Luxon: luxon.Info.version: luxon
+Marionette: Marionette.VERSION: marionette
+Marked: marked.version: marked
+Masonry: Masonry.version: masonry-layout
+MathJax: MathJax.version: mathjax
+Material-UI: MaterialUI.version: @material-ui/core
+Matter.js: Matter.version: matter-js
+Modernizr: Modernizr._version: modernizr
+Monaco Editor: MonacoEditor.version: monaco-editor
+Moment.js: moment.version: moment
+MooTools: MooTools.version: mootools
+MobX: mobx._getGlobalState().version: mobx
+MobX-State-Tree: MST.version: mobx-state-tree
+Mocha: Mocha.version: mocha
+Monaco Editor: MonacoEditor.version: monaco-editor
+Muuri: Muuri.version: muuri
+Next.js: Next.version: next
+Nivo: Nivo.version: nivo
+Nuxt.js: Nuxt.version: nuxt
+OpenLayers: ol.VERSION: ol
+Packery: Packery.version: packery
+Parcel: Parcel.version: parcel-bundler
+Parsley.js: Parsley.version: parsleyjs
+Phaser: Phaser.VERSION: phaser
+P5.js: p5.prototype.version: p5
+PIXI.js: PIXI.VERSION: pixi.js
+PixiJS: PIXI.VERSION: pixi.js
+Plyr: Plyr.version: plyr
+Polymer: Polymer.version: @polymer/polymer
+Popper.js: Popper.VERSION: @popperjs/core
+PostCSS: PostCSS.version: postcss
+Preact: Preact.version: preact
+PrimeVue: PrimeVue.version: primevue
+Prototype.js: prototype.version: prototypejs
+Puppeteer: Puppeteer.version: puppeteer
+PurgeCSS: PurgeCSS.version: purgecss
+Quasar: Quasar.version: quasar
+Quill: Quill.version: quill
+Ramda: R.version: ramda
+React: React.version: react
+React Router: ReactRouter.version: react-router
+React Testing Library: RTL.version: @testing-library/react
+Redux: redux.VERSION: redux
+Redux Saga: ReduxSaga.version: redux-saga
+RequireJS: require.version: requirejs
+Rollup.js: rollup.VERSION: rollup
+RxJS: rxjs.VERSION: rxjs
+SASS: SASS.version: sass
+Selenium WebDriver: Selenium.version: selenium-webdriver
+Semantic UI: SemanticUI.version: semantic-ui
+Showdown: Showdown.version: showdown
+Sinon: Sinon.version: sinon
+Snowpack: Snowpack.version: snowpack
+SortableJS: Sortable.VERSION: sortablejs
+Storybook: Storybook.version: @storybook/react
+Stimulus: Stimulus.version: stimulus
+Stylus: Stylus.version: stylus
+Svelte: svelte.VERSION: svelte
+Swiper: Swiper.version: swiper
+Tailwind CSS: Tailwind.version: tailwindcss
+Toastr: toastr.version: toastr
+TinyMCE: tinymce.majorVersion + "." + tinymce.minorVersion: tinymce
+Three.js: THREE.REVISION: three
+TypeScript: ts.version: typescript
+Turf.js: turf.version: turf
+Two.js: Two.VERSION: two.js
+Underscore.js: _.VERSION: underscore
+Velocity.js: Velocity.version: velocity-animate
+Video.js: videojs.VERSION: video.js
+Vue.js: Vue.version: vue
+Vuex: Vuex.version: vuex
+VueRouter: VueRouter.version: vue-router
+Vuetify: vuetify.framework.version: vuetify
+Webpack: webpack.version: webpack
+XRegExp: XRegExp.version: xregexp
+YUI: Y.VERSION / YUI.version / YAHOO.version: yui
+Yup: Yup.version: yup
+zone.js: zone.VERSION: zone.js

@@ -1,0 +1,2949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NetScan</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+
+</head>
+<body>
+    
+   
+    <div id="mySidebar" class="sidebar">
+        <div class="sidebar-header">
+            <a href="/" class="new-scan-btn">New Scan</a>
+            <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">×</a>
+        </div>
+        <h4 id="searchTitle">Previous Searches</h4>
+        <ul id="search-history">
+            {% for search in previous_searches %}
+                <li>
+                    <a href="{{ url_for('search', search_id=search['id']) }}" class="{{ 'active-link' if current_page == search['id'] else '' }}" onclick="saveScrollPosition()">
+                        <span class="search-icon search-date">{{ search['name'] }}</span>
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div id="main">
+        <button id="openbtn" class="openbtn" onclick="openNav()">☰</button>
+        <h1>{{ScanName}}</h1>
+        
+
+        <div id="siteImages"></div>
+        <div id="accordionContainer"></div>
+    </div>
+
+    <script>
+
+        function saveScrollPosition() {
+            const sidebar = document.getElementById('mySidebar');
+            localStorage.setItem('sidebarScrollPosition', sidebar.scrollTop);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Attach click event to the document, and check if the clicked element has the 'copyable2' class
+            document.addEventListener('click', function(event) {
+                const element = event.target;
+                if (element.classList.contains('copyable2')) {
+                    // Copy text to clipboard
+                    const textToCopy = element.innerText; // 'element' refers to the clicked element with class 'copyable2'
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        console.log("Copied to clipboard:", textToCopy);
+                        // Optional: Provide feedback to the user that text was copied
+                        alert("Copied: " + textToCopy);
+                    }).catch(err => {
+                        console.error('Error copying text to clipboard:', err);
+                    });
+                }
+            });
+        });
+
+
+        // Function to add 'active-link' class to the clicked sidebar link
+        function handleSidebarLinkClick() {
+            // Get all the sidebar links
+            const sidebarLinks = document.querySelectorAll('#search-history li a');
+
+            // Add click event listener to each link
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function() {
+                    // Remove 'active-link' class from all links
+                    sidebarLinks.forEach(l => l.classList.remove('active-link'));
+
+                    // Add 'active-link' class to the clicked link
+                    this.classList.add('active-link');
+                });
+            });
+        }
+        
+        
+        
+        function createVulnerabilityTemplate(vulnerabilityName, cvssScore, cvssColor, description) {
+            let htmlTemplate = `
+                <h2 class="vulnerability-title">${vulnerabilityName}</h2>
+                <div class="cvss-container" style="background-color: ${cvssColor};">
+                    <div class="cvss-title">CVSS: </div>
+                    <div class="cvss-score">${cvssScore}</div>
+                </div>
+                <p class="vulnerability-description">${description}</p>
+            `;
+
+            return htmlTemplate;
+        }
+
+
+
+        function openNav() {
+            document.getElementById("mySidebar").style.width = "250px";
+            document.getElementById("openbtn").style.display = "none";
+            document.body.style.paddingLeft = "250px"; // Apply padding to body instead
+        }
+
+        function closeNav() {
+            document.getElementById("mySidebar").style.width = "0";
+            document.getElementById("openbtn").style.display = "block";
+            document.body.style.paddingLeft = "0"; // Reset body padding
+        }
+
+        // This function checks the window width and opens/closes the sidebar accordingly
+        function autoToggleNav() {
+            if (window.innerWidth > 1200) { // Assuming 960px is the max width for your 'main'
+                openNav();
+            } else {
+                closeNav();
+            }
+        }
+
+
+        function displayScreenshots(searchResults) {
+            const siteImagesContainer = document.getElementById("siteImages");
+            siteImagesContainer.innerHTML = ''; // Clear existing content
+
+            let totalImageCount = 0;
+
+            // Count total images
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    if (portObj.screenshot) {
+                        totalImageCount++;
+                    }
+                });
+            });
+
+            if (totalImageCount < 2) return;
+
+            // Create a container for images
+            let imagesBorderContainer = document.createElement("div");
+            imagesBorderContainer.className = "images-border-container";
+            siteImagesContainer.appendChild(imagesBorderContainer);
+
+            let rowDiv = document.createElement("div");
+            rowDiv.className = "image-row";
+            imagesBorderContainer.appendChild(rowDiv);
+
+            let imageCount = 0;
+
+            // Process each host and port
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach((portObj, portIndex) => {
+                    if (portObj.screenshot) {
+                        if (imageCount % 4 === 0 && imageCount !== 0) {
+                            rowDiv = document.createElement("div");
+                            rowDiv.className = "image-row";
+                            imagesBorderContainer.appendChild(rowDiv);
+                        }
+
+                        let imageElement = document.createElement("a");
+
+                        let imageId = `accordion-${hostObj.host[0]}-${portObj.port}`;
+                        imageElement.href = `#${imageId}`;
+                        imageElement.className = "image-link";
+                        imageElement.innerHTML = `<img class="image-border" src="/${portObj.screenshot}" alt="Screenshot of ${hostObj.host[0]} on port ${portObj.port}" style="width: 100%; height: auto;">`;
+                        rowDiv.appendChild(imageElement);
+
+                        imageCount++;
+
+                        console.log(imageCount)
+
+                        if (imageCount >= 4) {
+                            imageElement.classList.add("image-quarter");
+                        }
+
+                    }
+                });
+            });
+
+            attachImageEventListeners();
+        }
+
+
+
+        function attachImageEventListeners() {
+            document.querySelectorAll('.image-link').forEach(imageLink => {
+                imageLink.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    const accordionToOpen = document.getElementById(event.currentTarget.getAttribute('href').substring(1));
+                    if (accordionToOpen) {
+                        if (!accordionToOpen.classList.contains('active')) {
+                            accordionToOpen.classList.add('active');
+                            let panel = accordionToOpen.nextElementSibling;
+                            panel.style.maxHeight = panel.scrollHeight + "px";
+                            accordionToOpen.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        } else {
+                            accordionToOpen.classList.remove('active');
+                            let panel = accordionToOpen.nextElementSibling;
+                            panel.style.maxHeight = null;
+                        }
+                    }
+                });
+            });
+        }
+
+
+        function openAccordion(accordionId) {
+            // Prevent the default anchor link behavior
+            event.preventDefault();
+
+            // Find the accordion button using the provided ID
+            var accordionButton = document.getElementById(accordionId);
+
+            // Simulate a click on the accordion button only if it's not already open
+            if (accordionButton && !accordionButton.classList.contains("active")) {
+                accordionButton.click();
+            }
+
+            // Scroll the accordion button into view at the top of the screen
+            accordionButton.scrollIntoView({behavior: "smooth", block: "start"});
+        }
+
+
+
+
+        
+
+
+        
+
+
+        // Call this function where appropriate, e.g., after searchResults is available
+        // displayScreenshots(searchResults);
+
+
+        // Call autoToggleNav on window resize
+        window.addEventListener('resize', autoToggleNav);
+
+        // Also call autoToggleNav on initial load
+        window.addEventListener('load', autoToggleNav);
+
+
+        window.addEventListener('DOMContentLoaded', (event) => {
+            const searchResults = JSON.parse('{{ results | tojson | safe }}');
+            handleSidebarLinkClick();
+
+            const savedPosition = localStorage.getItem('sidebarScrollPosition');
+            if (savedPosition !== null) {
+                const sidebar = document.getElementById('mySidebar');
+                sidebar.scrollTop = savedPosition;
+            }
+
+
+            displayScreenshots(searchResults);
+
+            console.log(searchResults)
+            const accordionContainer = document.getElementById("accordionContainer");
+
+
+            // Start by creating the Vulnerability Report accordion as the first item
+            let markdownAccordionButton = document.createElement("button");
+            markdownAccordionButton.className = "accordion";
+            markdownAccordionButton.innerHTML = "Vulnerability Report";
+            let markdownPanel = document.createElement("div");
+            markdownPanel.className = "panel";
+            let markdownContentHTML = '';
+
+
+    
+            // Helper function to create the headers to remove table
+            function generateHeadersToRemoveTable(headersToRemove) {
+                let tableHTML = '<h3>Headers to Remove</h3><table>';
+                for (let [key, value] of Object.entries(headersToRemove)) {
+                    tableHTML += `<tr><td>${key}</td><td>${value}</td></tr>`;
+                }
+                tableHTML += '</table>';
+                return tableHTML;
+            }
+
+            document.addEventListener('click', function(event) {
+                if (event.target.classList.contains('copyable')) {
+                    const softwareData = searchResults.map(hostObj => hostObj.ports.map(portObj => portObj.software).flat()).flat();
+                    const functionString = createResultsFunction(softwareData);
+                    copyToClipboard(functionString);
+                }
+            });
+    
+           
+
+            
+
+            /* ------------------- Mark Down Tables ------------------- */
+
+
+            let unsupportedSoftwareTableHeadersRendered = false;
+            let unsupportedSoftwareTableContent = "";
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check for End-of-Life Software vulnerability
+                    let headers = portObj.headers_to_remove;
+                    for (let header in headers) {
+                        if (headers[header].vulnerability.includes('End-of-Life-Software')) {
+                            // Render table headers if not already done
+                            if (!unsupportedSoftwareTableHeadersRendered) {
+                                markdownContentHTML += `
+                                    <h2>Unsupported Software Detected - <span class="${"cvss-red"}">10</span> </h2>
+                                    <p><strong>Description</strong></p>
+                                    <p>The remote web server was found to be running a variety of outdated and unsupported software packages. In most cases, the attacker needs to have some level of access to the target victim in order to exploit these issues fully. However, some issues were found that can be remotely exploited, reflected in the critical-severity rating. Information about the affected hosts and vulnerable versions can be found in the _Outdated Software_ section, under additional information.</p> <!-- Description left blank as instructed -->
+                                    <div class="table-title-with-buttons">
+                                        <h3>Unsupported Software Table</h3>    
+                                        ${createTableButtons("Unsupported Softwares", "unsupportedSoftwareTable")}
+                                    </div>
+                                    <table id="unsupportedSoftwareTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Host</th>
+                                                <th>Port</th>
+                                                <th>Service</th>
+                                                <th>Software</th>
+                                                <th>Current Version</th>
+                                                <th>Latest Version</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                `;
+                                unsupportedSoftwareTableHeadersRendered = true;
+                            }
+
+                            // Determine version details
+                            const currentVersion = headers[header]["Current-version"] ? headers[header]["Current-version"] : "N/A";
+                            const latestVersion = headers[header]["Latest-version"] ? headers[header]["Latest-version"] : "N/A";
+                            const softwareRaw = headers[header]["data"] ? headers[header]["data"] : "N/A";
+                            const software = softwareRaw.split('/')[0]; // Takes the first part before any '/' character
+
+
+                            unsupportedSoftwareTableContent += `
+                                <tr>
+                                    <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</a></td>
+                                    <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+                                    <td style="text-transform: uppercase;">${portObj.service}</td>
+                                    <td>${software}</td>
+                                    <td>${currentVersion}</td>
+                                    <td>${latestVersion}</td>
+                                </tr>
+                            `;
+
+
+                        }
+                    }
+
+                    if (portObj.cms && portObj.cms.vulnerability && portObj.cms.vulnerability.vulnerability.includes('End-of-Life-Software')) {
+                        if (!unsupportedSoftwareTableHeadersRendered) {
+                            markdownContentHTML += `
+                                    <h2>Unsupported Software Detected - <span class="${"cvss-red"}">10</span> </h2>
+                                    <p><strong>Description</strong></p>
+                                    <p>The remote web server was found to be running a variety of outdated and unsupported software packages. In most cases, the attacker needs to have some level of access to the target victim in order to exploit these issues fully. However, some issues were found that can be remotely exploited, reflected in the critical-severity rating. Information about the affected hosts and vulnerable versions can be found in the _Outdated Software_ section, under additional information.</p> <!-- Description left blank as instructed -->
+                                    <div class="table-title-with-buttons">
+                                        <h3>Unsupported Software Table</h3>    
+                                        ${createTableButtons("Unsupported Softwares", "unsupportedSoftwareTable")}
+                                    </div>
+                                    <table id="unsupportedSoftwareTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Host</th>
+                                                <th>Port</th>
+                                                <th>Service</th>
+                                                <th>Software</th>
+                                                <th>Current Version</th>
+                                                <th>Latest Version</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                `;
+                                unsupportedSoftwareTableHeadersRendered = true;
+                        }
+                        
+                        const cmsName = portObj.cms.CMS || "N/A";
+                        const currentVersion = portObj.cms.version || "N/A";
+                        const latestVersion = portObj.cms.vulnerability['Latest-version'] || "N/A";
+
+                        unsupportedSoftwareTableContent += `
+                            <tr>
+                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${hostObj.host[0]}</a></td>
+                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+                                <td style="text-transform: uppercase;">${portObj.service}</td>
+                                <td>${cmsName}</td>
+                                <td>${currentVersion}</td>
+                                <td>${latestVersion}</td>
+                            </tr>
+                        `;
+                    }
+                    
+                    
+                });
+            });
+
+            // Make sure to append `unsupportedSoftwareTableContent` to your HTML or Markdown content after this loop
+            if (unsupportedSoftwareTableHeadersRendered) {
+                markdownContentHTML += unsupportedSoftwareTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+
+
+
+
+
+
+
+            let outdatedSoftwareTableHeadersRendered = false;
+            let outdatedSoftwareTableContent = "";
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check for End-of-Life Software vulnerability
+                    let headers = portObj.headers_to_remove;
+                    for (let header in headers) {
+                        if (headers[header].vulnerability.includes('Outdated-Software')) {
+                            // Render table headers if not already done
+                            if (!outdatedSoftwareTableHeadersRendered) {
+                                markdownContentHTML += `
+                                    <h2>Outdated Software Detected - <span class="${"cvss-orange"}">7.2</span> </h2>
+                                    <p><strong>Description</strong></p>
+                                    <p>The target reported running an outdated software version that is potentially vulnerable to multiple issues, including web-based and Denial-of-Service attacks. An attacker exploiting these vulnerabilities can cause disruption to the service or conduct multiple web-based attacks against the target, including the execution of arbitrary client-side scripts. In a worst-case scenario, Remote Code Execution attacks could be launched that could provide an attacker with access to the internal network, depending on the network location of the affected host.</p>                                    <div class="table-title-with-buttons">
+                                        <h3>Outdated Software Table</h3>    
+                                        ${createTableButtons("outdated Softwares", "outdatedSoftwareTable")}
+                                    </div>
+                                    <table id="outdatedSoftwareTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Host</th>
+                                                <th>Port</th>
+                                                <th>Service</th>
+                                                <th>Software</th>
+                                                <th>Current Version</th>
+                                                <th>Latest Version</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                `;
+                                outdatedSoftwareTableHeadersRendered = true;
+                            }
+
+                            // Determine version details
+                            const currentVersion = headers[header]["Current-version"] ? headers[header]["Current-version"] : "N/A";
+                            const latestVersion = headers[header]["Latest-version"] ? headers[header]["Latest-version"] : "N/A";
+                            const softwareRaw = headers[header]["data"] ? headers[header]["data"] : "N/A";
+                            const software = softwareRaw.split('/')[0]; // Takes the first part before any '/' character
+
+                            // Add a row for this port
+                            outdatedSoftwareTableContent += `
+                                <tr>
+                                                                    <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                    <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                    <td style="text-transform: uppercase;">${portObj.service}</td>
+                                    <td>${software}</td>
+                                    <td>${currentVersion}</td>
+                                    <td>${latestVersion}</td>
+                                </tr>
+                            `;
+                        }
+                    }
+                });
+            });
+
+            // Make sure to append `unsupportedSoftwareTableContent` to your HTML or Markdown content after this loop
+            if (outdatedSoftwareTableHeadersRendered) {
+                markdownContentHTML += outdatedSoftwareTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+            let tableHeadersRendered = false;
+            let tableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    if (portObj.content_length === 'True' && portObj.headers) {
+
+                    let missingHeaders = [];
+
+                    ['X-Frame-Options', 'X-Content-Type-Options', 'Content-Security-Policy', 'Strict-Transport-Security'].forEach(headerName => {
+                        if (portObj.headers[headerName] && portObj.headers[headerName].value === 'Missing!') {
+                            missingHeaders.push(headerName);
+                        }
+                    });
+
+                    if (missingHeaders.length > 0) {
+                        // Render table headers if not already done
+                        if (!tableHeadersRendered) {
+                            markdownContentHTML += `
+                                <h2>Missing Security Headers - <span class="${"cvss-yellow"}">4.9</span> </h2>
+                                <p><strong>Description</strong></p>
+                                <p>The web server does not implement several security headers. Omitting these headers leaves users of the application vulnerable to a variety of potential attacks, including Man-in-the-Middle attacks, Cross-Site Scripting, and phishing attacks that ‘steal’ user clicks or data entered into malicious forms.</p>
+                                <div class="table-title-with-buttons">
+                                    <h3>Missing Headers Table</h3>
+                                    ${createTableButtons("Missing Security Headers", "missingHeadersTable")}
+                                </div>
+                            
+                                <table id="missingHeadersTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Host</th>
+                                            <th>Port</th>
+                                            <th>Service</th>
+                                            <th>X-Frame-Options</th>
+                                            <th>X-Content-Type-Options</th>
+                                            <th>Content-Security-Policy</th>
+                                            <th>Strict-Transport-Security</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
+                            tableHeadersRendered = true;
+                        }
+
+                        let accordionId = `accordion-${hostObj.host[0]}-${portObj.port}`;
+
+
+                        tableContent += `
+                            <tr>
+                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</td>
+                                <td style="text-transform: uppercase;">${portObj.service}</td>
+                                ${missingHeaders.includes('X-Frame-Options') ? '<td>Missing</td>' : '<td></td>'}
+                                ${missingHeaders.includes('X-Content-Type-Options') ? '<td>Missing</td>' : '<td></td>'}
+                                ${missingHeaders.includes('Content-Security-Policy') ? '<td>Missing</td>' : '<td></td>'}
+                                ${missingHeaders.includes('Strict-Transport-Security') ? '<td>Missing</td>' : '<td></td>'}
+                            </tr>
+                        `;
+                    }
+                }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (tableHeadersRendered) {
+                let tableName = "Missing Security Headers";
+                let tableId = "missingHeadersTable";
+                markdownContentHTML += tableContent + `</tbody></table><br><br><hr><br><br>`;
+
+            }
+
+
+            let cspTableHeadersRendered = false;
+            let cspTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    if (portObj.headers['Content-Security-Policy'] && portObj.headers['Content-Security-Policy'].color === 'green') {
+                        // Render table headers if not already done
+                        if (!cspTableHeadersRendered) {
+                            markdownContentHTML += `
+                                <h2>Misconfigured Content Security Policy - <span class="${"cvss-green"}">2.9</span> </h2>
+                                <p><strong>Description</strong></p>
+                                <p>The Content-Security-Policy (CSP) header was configured to allow access to wildcard and user controllable remote domains. An attacker may be able to exploit this issue if an External Services Interaction (ESI) vulnerability is identified elsewhere on the application.</p>                                
+                                <div class="table-title-with-buttons">
+                                    <h3>Misconfigured Content Security Policy Table</h3>
+                                    ${createTableButtons("Misconfigured Content Security Policy", "misconfiguredCspTable")}
+                                </div>
+                                <table id="misconfiguredCspTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Host</th>
+                                            <th>Port</th>
+                                            <th>Service</th>
+                                            <th>Content-Security-Policy Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
+                            cspTableHeadersRendered = true;
+                        }
+
+                        // Add a row for this port
+                        cspTableContent += `
+                            <tr>
+                                                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                <td style="text-transform: uppercase;">${portObj.service}</td>
+                                <td>${portObj.headers['Content-Security-Policy'].value}</td>
+                            </tr>
+                        `;
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (cspTableHeadersRendered) {
+                markdownContentHTML += cspTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+            let stsTableHeadersRendered = false;
+            let stsTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Define misconfiguration criteria for the STS header
+                    let isMisconfigured = !portObj.headers['Strict-Transport-Security'] || portObj.headers['Strict-Transport-Security'].color === 'green'; // Example condition
+
+                    if (isMisconfigured) {
+                        // Render table headers if not already done
+                        if (!stsTableHeadersRendered) {
+                            markdownContentHTML += `
+                                <h2>Misconfigured Strict-Transport-Security - <span class="${"cvss-green"}">2.9</span> </h2>
+                                <p><strong>Description</strong></p>
+                                <p>During an interrogation of the application's HTTP security headers, the consultant noted that the Strict-Transport-Security (HSTS) was not set to the recommended value.</p>
+                                <div class="table-title-with-buttons">
+                                    <h3>Misconfigured Strict-Transport-Security Table</h3>
+                                    ${createTableButtons("Misconfigured Strict-Transport-Security Headers", "misconfiguredStsTable")}
+                                </div>
+                                <table id="misconfiguredStsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Host</th>
+                                            <th>Port</th>
+                                            <th>Service</th>
+                                            <th>Strict-Transport-Security Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
+                            stsTableHeadersRendered = true;
+                        }
+
+                        // Add a row for this port
+                        stsTableContent += `
+                            <tr>
+                                                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                <td style="text-transform: uppercase;">${portObj.service}</td>
+                                <td>${portObj.headers['Strict-Transport-Security'] ? portObj.headers['Strict-Transport-Security'].value : 'Missing or Misconfigured'}</td>
+                            </tr>
+                        `;
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (stsTableHeadersRendered) {
+                markdownContentHTML += stsTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+            let xssTableHeadersRendered = false;
+            let xssTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    if (portObj.headers_to_remove && portObj.headers_to_remove['X-Xss-Protection'] && portObj.headers_to_remove['X-Xss-Protection'].colour === 'green') {
+                        // Render table headers if not already done
+                        if (!xssTableHeadersRendered) {
+                            markdownContentHTML += `
+                                <h2>Deprecated Header In Use: X-XSS Protection - <span class="${"cvss-green"}">2</span> </h2>
+                                <p><strong>Description</strong></p>
+                                <p>The application responded with the X-XSS-Protection header configured to 1; mode=block, which, in certain circumstances, may render an application that was not previously vulnerable to Cross-Site Scripting (XSS) unavailable due to the enforcement of the ‘mode=block’ directive.</p>                                    
+                                <div class="table-title-with-buttons">
+                                    <h3>X-XSS Protection Table</h3>    
+                                    ${createTableButtons("Deprecated Header In Use: X-XSS Protection", "xssProtectionIssuesTable")}
+                                </div>
+                                <table id="xssProtectionIssuesTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Host</th>
+                                            <th>Port</th>
+                                            <th>Service</th>
+                                            <th>X-XSS-Protection Details</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
+                            xssTableHeadersRendered = true;
+                        }
+
+                        // Add a row for this port
+                        xssTableContent += `
+                            <tr>
+                                                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                <td style="text-transform: uppercase;">${portObj.service}</td>
+                                <td>${portObj.headers_to_remove['X-Xss-Protection'].data}</td>
+                            </tr>
+                        `;
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (xssTableHeadersRendered) {
+                markdownContentHTML += xssTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+            let headerDisclosureTableHeadersRendered = false;
+            let headerDisclosureTableContent = '';
+
+            searchResults.forEach(hostObj => {
+            hostObj.ports.forEach(portObj => {
+                // Check for HTTP Header Version Disclosure vulnerability
+                let headers = portObj.headers_to_remove;
+                for (let header in headers) {
+                    if (headers[header].vulnerability.includes('HTTP Header Version Disclosure')) {
+                        // Render table headers if not already done
+                        if (!headerDisclosureTableHeadersRendered) {
+                            markdownContentHTML += `
+                                <h2>HTTP Header Version Disclosure - <span class="${"cvss-yellow"}">5</span> </h2>
+                                <p><strong>Description</strong></p>
+                                <p>The remote host advertises underlying software versions through HTTP headers via server responses. These software versions can be researched to discover any publicly available vulnerabilities and, if any exist, potentially compromise the underlying server.</p>
+                                <div class="table-title-with-buttons">
+                                    <h3>HTTP Header Version Disclosure Table</h3>    
+                                    ${createTableButtons("HTTP Header Version Disclosures", "headerVersionDisclosureTable")}
+                                </div>
+                                <table id="headerVersionDisclosureTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Host</th>
+                                            <th>Port</th>
+                                            <th>Service</th>
+                                            <th>Problematic Header</th>
+                                            <th>Details</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
+                            headerDisclosureTableHeadersRendered = true;
+                        }
+
+          
+
+                        // Add a row for this port
+                        headerDisclosureTableContent += `
+                            <tr>
+                                                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                <td style="text-transform: uppercase;">${portObj.service}</td>
+                                <td>${header}</td>
+                                <td>${headers[header].data}</td>
+                      
+                            </tr>
+                        `;
+                    }
+                }
+            });
+        });
+
+
+            // Append table content if headers were rendered
+            if (headerDisclosureTableHeadersRendered) {
+                markdownContentHTML += headerDisclosureTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+
+
+
+
+            // Assuming markdownContentHTML is defined somewhere in your code
+            let softwareTableContent = '';
+            let softwareTableHeadersRendered = false;
+            let highestCveScore = 4.5; // Start with the default CVE rating
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    if (portObj.software) {
+                        portObj.software.forEach(softwareObj => {
+                            if (softwareObj.outdated) {
+                                // Render table headers if not already done
+                                if (!softwareTableHeadersRendered) {
+                                    // Table headers will be added later
+                                    softwareTableHeadersRendered = true;
+                                }
+
+                                // Generate CVE links
+                                let cveLinks = softwareObj.cve && softwareObj.cve.length > 0
+                                    ? softwareObj.cve.map(cveObj => {
+                                        // Update the highest CVE score if needed
+                                        if (parseFloat(cveObj.score) > highestCveScore) {
+                                            highestCveScore = parseFloat(cveObj.score);
+                                        }
+
+                                        return `${cveObj.cve}`;
+                                    }).join('<br>')
+                                    : 'N/A';
+
+                                softwareTableContent += `
+                                    <tr>
+                                                                        <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                        <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                        <td>${softwareObj.library}</td>
+                                        <td>${softwareObj.version}</td>
+                                        <td>${softwareObj.latest_version || "N/A"}</td>
+                                        <td>${cveLinks}</td>
+                                    </tr>
+                                `;
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Now, render the table headers with the updated highest CVE score
+            if (softwareTableHeadersRendered) {
+                markdownContentHTML += `
+                    <h2>Outdated Javascript Libraries - <span class="${"cvss-yellow"}">${highestCveScore}</span> </h2>
+                    <p><strong>Description</strong></p>
+                    <p>In order to improve the quality and functionality of the application, scripting software is used to perform more complex actions. Some of the software in use is out of date and may be vulnerable to Cross-Site Scripting attacks, which could be used to target users of the application to steal their username and password or install malware.</p>
+                    <div class="table-title-with-buttons">
+                        <h3>Outdated Javascript Libraries Table</h3>    
+                        ${createTableButtons("Outdated Javascript Libraries", "outdatedSoftwareTable")}
+                    </div>
+                    <table id="outdatedSoftwareTable">
+                        <thead>
+                            <tr>
+                                <th>Host</th>
+                                <th>Port</th>
+                                <th>Software</th>
+                                <th>Discovered Version</th>
+                                <th>Latest Version</th>
+                                <th>CVE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${softwareTableContent}
+                        </tbody>
+                    </table><br><br><hr><br><br>
+                `;
+            }
+
+
+            let lucky13TableHeadersRendered = false;
+            let lucky13TableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Initialize an object to store CBC cipher counts per SSL/TLS version
+                    let cbcCiphersPerVersion = {};
+
+                    // Check if the port has ssl-ciphers information
+                    if (portObj['ssl-ciphers']) {
+                        for (let version in portObj['ssl-ciphers']) {
+                            let cbcCipherCount = 0; // Initialize count for this version
+                            portObj['ssl-ciphers'][version].forEach(cipherObj => {
+                                // Check for the presence of Lucky Thirteen vulnerability
+                                let hasLuckyThirteen = cipherObj.vulnerabilities.some(vuln => vuln.vulnerability === "Lucky Thirteen");
+                                // Increment count if Lucky Thirteen vulnerability is present
+                                if (hasLuckyThirteen) {
+                                    cbcCipherCount++;
+                                }
+                            });
+                            // Store the count for this version if any CBC ciphers with Lucky Thirteen were found
+                            if (cbcCipherCount > 0) {
+                                cbcCiphersPerVersion[version] = cbcCipherCount;
+                            }
+                        }
+                    }
+
+                    // Only proceed if there are CBC ciphers with Lucky Thirteen in any version
+                    if (Object.keys(cbcCiphersPerVersion).length > 0) {
+                        // Render table headers if not already done
+                        if (!lucky13TableHeadersRendered) {
+                            markdownContentHTML += `
+                                <h2>SSL/TLS Lucky13 - <span class="cvss-green">2.6</span> </h2>
+                                <p><strong>Description</strong></p>
+                                <p>Lucky13 is a cryptographic side-channel attack targeting CBC mode ciphers in SSL/TLS. It exploits timing discrepancies in MAC validation to reveal secrets.</p>
+                                <div class="table-title-with-buttons">
+                                    <h3>Lucky 13 Vulnerability Summary</h3>
+                                    <!-- Placeholder for creating table buttons. Replace with your actual button creation logic -->
+                                    <div>${createTableButtons("Lucky 13 Vulnerabilities", "lucky13VulnerabilitySummary")}</div>
+                                </div>
+                                <table id="lucky13VulnerabilitySummary">
+                                    <thead>
+                                        <tr>
+                                            <th>Host</th>
+                                            <th>Port</th>
+                                            <th>CBC Cipher Summary</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
+                            lucky13TableHeadersRendered = true;
+                        }
+
+                        // Construct the CBC ciphers summary text to display vertically
+                        let cbcCipherSummary = Object.entries(cbcCiphersPerVersion).map(([version, count]) => `${count} CBC ciphers over ${version}`).join('<br>');
+
+                        // Add a row for this port with the CBC cipher summary displayed vertically
+                        lucky13TableContent += `
+                            <tr>
+                                                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                <td>${cbcCipherSummary}</td>
+                            </tr>
+                        `;
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (lucky13TableHeadersRendered) {
+                markdownContentHTML += lucky13TableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+
+
+
+            let rc4TableHeadersRendered = false;
+            let rc4TableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if the port has ssl-ciphers information
+                    if (portObj['ssl-ciphers']) {
+                        for (let version in portObj['ssl-ciphers']) {
+                            portObj['ssl-ciphers'][version].forEach(cipherObj => {
+                                // Check if the cipher is marked as vulnerable to RC4
+                                let hasRC4Vulnerability = cipherObj.vulnerabilities.some(vuln => vuln.vulnerability === 'RC4');
+                                if (hasRC4Vulnerability) {
+                                    // Render table headers if not already done
+                                    if (!rc4TableHeadersRendered) {
+                                        markdownContentHTML += `
+                                            <h2>RC4 Cipher Suites Supported (Bar Mitzvah) - <span class="${"cvss-yellow"}">4.3</span> </h2>
+                                            <p><strong>Description</strong></p>
+                                            <p>The server was discovered to support the insecure RC4 cipher, which allows connections with a weak cipher. An attacker may be able to decrypt communications between the affected service and clients, and gain access to any data transmitted between the client and the server. The impact of successful exploitation is dependent on the information that is sent to and from the server.</p>
+                                            <div class="table-title-with-buttons">
+                                                <h3>RC4 Cipher Vulnerability Table</h3>    
+                                                ${createTableButtons("RC4 Cipher Vulnerabilities", "rc4CipherVulnerabilityTable")}
+                                            </div>
+                                            <table id="rc4CipherVulnerabilityTable">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Host</th>
+                                                        <th>Port</th>
+                                                        <th>TLS/SSL Version</th>
+                                                        <th>Cipher</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                        `;
+                                        rc4TableHeadersRendered = true;
+                                    }
+
+                                    // Add a row for this port
+                                    rc4TableContent += `
+                                        <tr>
+                                                                            <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                            <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                            <td>${version}</td>
+                                            <td>${cipherObj.cipher}</td>
+                                        </tr>
+                                    `;
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (rc4TableHeadersRendered) {
+                markdownContentHTML += rc4TableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+            let beastTableHeadersRendered = false;
+            let beastTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if the port has ssl-ciphers information
+                    if (portObj['ssl-ciphers']) {
+                        for (let version in portObj['ssl-ciphers']) {
+                            portObj['ssl-ciphers'][version].forEach(cipherObj => {
+                                // Check if the cipher is marked as vulnerable to BEAST
+                                let hasBeastVulnerability = cipherObj.vulnerabilities.some(vuln => vuln.vulnerability === 'BEAST');
+                                if (hasBeastVulnerability) {
+                                    // Render table headers if not already done
+                                    if (!beastTableHeadersRendered) {
+                                        markdownContentHTML += `
+                                            <h2>SSL/TLS Protocol Initialization Vector Implementation Information Disclosure Vulnerability (BEAST) - <span class="${"cvss-blue"}">0</span> </h2>
+                                            <p><strong>Description</strong></p>
+                                            <p>A vulnerability exists in SSL 3.0 and TLS 1.0 that could allow information disclosure, if an attacker intercepts encrypted traffic served from an affected system.</p>
+                                            <div class="table-title-with-buttons">
+                                                <h3>BEAST Vulnerability Table</h3>    
+                                                ${createTableButtons("BEAST Vulnerabilities", "beastVulnerabilityTable")}
+                                            </div>
+                                            <table id="beastVulnerabilityTable">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Host</th>
+                                                        <th>Port</th>
+                                                        <th>TLS/SSL Version</th>
+                                                        <th>Cipher</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                        `;
+                                        beastTableHeadersRendered = true;
+                                    }
+
+                                    // Add a row for this port
+                                    beastTableContent += `
+                                        <tr>
+                                                                            <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                            <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                            <td>${version}</td>
+                                            <td>${cipherObj.cipher}</td>
+                                        </tr>
+                                    `;
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (beastTableHeadersRendered) {
+                markdownContentHTML += beastTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+            let crimeTableHeadersRendered = false;
+            let crimeTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if the port has ssl-ciphers information
+                    if (portObj['ssl-ciphers']) {
+                        for (let version in portObj['ssl-ciphers']) {
+                            portObj['ssl-ciphers'][version].forEach(cipherObj => {
+                                // Check if the cipher is marked as vulnerable to CRIME
+                                let hasCrimeVulnerability = cipherObj.vulnerabilities.some(vuln => vuln.vulnerability === 'CRIME');
+                                if (hasCrimeVulnerability) {
+                                    // Render table headers if not already done
+                                    if (!crimeTableHeadersRendered) {
+                                        markdownContentHTML += `
+                                            <h2>CRIME Vulnerability</h2>
+                                            <div class="table-title-with-buttons">
+                                                <h3>CRIME Vulnerability Table</h3>    
+                                                ${createTableButtons("CRIME Vulnerabilities", "crimeVulnerabilityTable")}
+                                            </div>
+                                            <table id="crimeVulnerabilityTable">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Host</th>
+                                                        <th>Port</th>
+                                                        <th>TLS/SSL Version</th>
+                                                        <th>Cipher</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                        `;
+                                        crimeTableHeadersRendered = true;
+                                    }
+
+                                    // Add a row for this port
+                                    crimeTableContent += `
+                                        <tr>
+                                                                            <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                            <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                            <td>${version}</td>
+                                            <td>${cipherObj.cipher}</td>
+                                        </tr>
+                                    `;
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (crimeTableHeadersRendered) {
+                markdownContentHTML += crimeTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+            let poodleTableHeadersRendered = false;
+            let poodleTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if the port has ssl-ciphers information
+                    if (portObj['ssl-ciphers']) {
+                        for (let version in portObj['ssl-ciphers']) {
+                            portObj['ssl-ciphers'][version].forEach(cipherObj => {
+                                // Check if the cipher is marked as vulnerable to POODLE
+                                let hasPoodleVulnerability = cipherObj.vulnerabilities.some(vuln => vuln.vulnerability === 'POODLE');
+                                if (hasPoodleVulnerability) {
+                                    // Render table headers if not already done
+                                    if (!poodleTableHeadersRendered) {
+                                        markdownContentHTML += `
+                                            <h2>SSL/TLS - SSLv3 Padding Oracle On Downgraded Legacy Encryption Vulnerability (POODLE) - <span class="${"cvss-yellow"}">5.9</span></h2>
+                                            <p><strong>Description</strong></p>
+                                            <p>The server was discovered to affected by a Man-in-the-Middle (MitM) information disclosure vulnerability known as POODLE. An attacker may be able to decrypt communications between the affected service and clients, and gain access to any data transmitted between the client and the server. The impact of successful exploitation is dependent on the information that is sent to and from the server.</p>
+                                            <div class="table-title-with-buttons">
+                                                <h3>POODLE Vulnerability Table</h3>    
+                                                ${createTableButtons("POODLE Vulnerabilities", "poodleVulnerabilityTable")}
+                                            </div>
+                                            <table id="poodleVulnerabilityTable">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Host</th>
+                                                        <th>Port</th>
+                                                        <th>TLS/SSL Version</th>
+                                                        <th>Cipher</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                        `;
+                                        poodleTableHeadersRendered = true;
+                                    }
+
+                                    // Add a row for this port
+                                    poodleTableContent += `
+                                        <tr>
+                                                                            <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                            <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                            <td>${version}</td>
+                                            <td>${cipherObj.cipher}</td>
+                                        </tr>
+                                    `;
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (poodleTableHeadersRendered) {
+                markdownContentHTML += poodleTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+
+            let freakTableHeadersRendered = false;
+            let freakTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if the port has ssl-ciphers information
+                    if (portObj['ssl-ciphers']) {
+                        for (let version in portObj['ssl-ciphers']) {
+                            portObj['ssl-ciphers'][version].forEach(cipherObj => {
+                                // Check if the cipher is marked as vulnerable to FREAK
+                                let hasFreakVulnerability = cipherObj.vulnerabilities.some(vuln => vuln.vulnerability === 'FREAK');
+                                if (hasFreakVulnerability) {
+                                    // Render table headers if not already done
+                                    if (!freakTableHeadersRendered) {
+                                        markdownContentHTML += `
+                                            <h2>SSL/TLS EXPORT_RSA <= 512-bit Cipher Suites Supported (FREAK) - <span class="${"cvss-yellow"}">4.3</span></h2>
+                                            <p><strong>Description</strong></p>
+                                            <p>The remote host supports EXPORT_RSA cipher suites with keys less than or equal to 512 bits. An attacker can factor a 512-bit RSA modulus in a short amount of time. A Man-in-the-Middle attacker may be able to downgrade the session to use EXPORT_RSA cipher suites (e.g. CVE-2015-0204). Thus, it is recommended to remove support for weak cipher suites.</p>
+                                            <div class="table-title-with-buttons">
+                                                <h3>FREAK Vulnerability Table</h3>    
+                                                ${createTableButtons("FREAK Vulnerabilities", "freakVulnerabilityTable")}
+                                            </div>
+                                            <table id="freakVulnerabilityTable">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Host</th>
+                                                        <th>Port</th>
+                                                        <th>TLS/SSL Version</th>
+                                                        <th>Cipher</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                        `;
+                                        freakTableHeadersRendered = true;
+                                    }
+
+                                    // Add a row for this port
+                                    freakTableContent += `
+                                        <tr>
+                                                                            <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                            <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                            <td>${version}</td>
+                                            <td>${cipherObj.cipher}</td>
+                                        </tr>
+                                    `;
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (freakTableHeadersRendered) {
+                markdownContentHTML += freakTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+
+
+
+            let sweet32TableHeadersRendered = false;
+            let sweet32TableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if the port has ssl-ciphers information
+                    if (portObj['ssl-ciphers']) {
+                        for (let version in portObj['ssl-ciphers']) {
+                            portObj['ssl-ciphers'][version].forEach(cipherObj => {
+                                // Check if the cipher is marked as vulnerable to SWEET32
+                                let hasSweet32Vulnerability = cipherObj.vulnerabilities.some(vuln => vuln.vulnerability === 'SWEET32');
+                                if (hasSweet32Vulnerability) {
+                                    // Render table headers if not already done
+                                    if (!sweet32TableHeadersRendered) {
+                                        markdownContentHTML += `
+                                            <h2>SSL/TLS - Medium Strength Encryption Supported (SWEET32) - <span class="${"cvss-yellow"}">5</span></h2>
+                                            <p><strong>Description</strong></p>
+                                            <p>The SSL services listed below supported cipher suite combinations using 3DES encryption with a 64-bit block size. Block cipher algorithms are still commonly used in protocols such as SSH and IPSec, and VPN services such as OpenVPN use such algorithms as AES, 3DES, and Blowfish, all of which can encrypt data in ‘blocks’.</p>
+                                            <div class="table-title-with-buttons">
+                                                <h3>SWEET32 Vulnerability Table</h3>    
+                                                ${createTableButtons("SWEET32 Vulnerabilities", "sweet32VulnerabilityTable")}
+                                            </div>
+                                            <table id="sweet32VulnerabilityTable">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Host</th>
+                                                        <th>Port</th>
+                                                        <th>TLS/SSL Version</th>
+                                                        <th>Cipher</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                        `;
+                                        sweet32TableHeadersRendered = true;
+                                    }
+
+                                    // Add a row for this port
+                                    sweet32TableContent += `
+                                        <tr>
+                                                                            <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                            <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                            <td>${version}</td>
+                                            <td>${cipherObj.cipher}</td>
+                                        </tr>
+                                    `;
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (sweet32TableHeadersRendered) {
+                markdownContentHTML += sweet32TableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+            
+            let tlsTableHeadersRendered = false;
+            let hostPortToTLSVersions = {}; // Object to track TLS versions for each host-port combination
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Initialize unique key for each host-port combination
+                    const hostPortKey = `${hostObj.host[0]}:${portObj.port}`;
+                    
+                    // Check if the port has ssl-ciphers information
+                    if (portObj['ssl-ciphers']) {
+                        for (let version in portObj['ssl-ciphers']) {
+                            // Check for TLS 1.0 and 1.1
+                            if (version === 'TLSv1.0' || version === 'TLSv1.1') {
+                                if (!hostPortToTLSVersions[hostPortKey]) {
+                                    hostPortToTLSVersions[hostPortKey] = [];
+                                }
+                                // Append version if not already included
+                                if (!hostPortToTLSVersions[hostPortKey].includes(version)) {
+                                    hostPortToTLSVersions[hostPortKey].push(version);
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+
+            // Check and render table headers
+            if (Object.keys(hostPortToTLSVersions).length > 0 && !tlsTableHeadersRendered) {
+                markdownContentHTML += `
+                    <h2>SSL/TLS Version 1.0/1.1 Supported - <span class="${"cvss-yellow"}">6.1</span></h2>
+                    <p><strong>Description</strong></p>
+                    <p>The configuration of the TLS services supports versions prior to TLSv1.2. The previous versions (TLSv1.0 and TLSv1.1) are no longer considered by the security community to be sufficiently cryptographically secure. Many vulnerabilities, such as BEAST, POODLE, and DROWN, have been discovered, causing industry experts to recommend the disabling of the older SSL and TLS protocols.</p>
+                    <div class="table-title-with-buttons">
+                        <h3>SSL/TLS Version 1.0/1.1 Table</h3>    
+                        ${createTableButtons("SSL/TLS Version 1.0/1.1 Table", "tlsVulnerabilityTable")}
+                    </div>
+                    <table id="tlsVulnerabilityTable">
+                        <thead>
+                            <tr>
+                                <th>Host</th>
+                                <th>Port</th>
+                                <th>TLS/SSL Version</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                tlsTableHeadersRendered = true;
+            }
+
+            // Generate table content
+            for (let hostPortKey in hostPortToTLSVersions) {
+                const [host, port] = hostPortKey.split(':');
+                const versions = hostPortToTLSVersions[hostPortKey].join(', ');
+                
+                markdownContentHTML += `
+                    <tr>
+                        <td>${host}</td>
+                        <td>${port}</td>
+                        <td>${versions}</td>
+                    </tr>
+                `;
+            }
+
+            // Close table tags if headers were rendered
+            if (tlsTableHeadersRendered) {
+                markdownContentHTML += `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+
+            let sslTableHeadersRendered = false;
+            let sslTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if the port has ssl-ciphers information
+                    if (portObj['ssl-ciphers']) {
+                        for (let version in portObj['ssl-ciphers']) {
+                            // Check for SSLv2 and SSLv3
+                            if (version === 'SSLv2' || version === 'SSLv3') {
+                                // Render table headers if not already done
+                                if (!sslTableHeadersRendered) {
+                                    markdownContentHTML += `
+                                        <h2>SSL/TLS - Version 2 and 3 Protocol Detection - <span class="${"cvss-orange"}">7.1</span></h2>
+                                        <p><strong>Description</strong></p>
+                                        <p>The SSL services listed below-supported connections using the outdated version 2.0 and/or 3.0 protocol. These two deprecated protocols have a number of well-known and well-documented cryptographic flaws, some of which have been successfully exploited to extract cleartext data from captured cipher text.</p>
+                                        <div class="table-title-with-buttons">
+                                            <h3>SSL/TLS Version 1.0/1.1 Table</h3>    
+                                            ${createTableButtons("SSL/TLS - Version 2 and 3 Table", "sslVulnerabilityTable")}
+                                        </div>
+
+                                        <table id="sslVulnerabilityTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Host</th>
+                                                    <th>Port</th>
+                                                    <th>SSL Version</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                    `;
+                                    sslTableHeadersRendered = true;
+                                }
+
+                                // Add a row for each vulnerable port
+                                sslTableContent += `
+                                    <tr>
+                                                                        <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                        <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                        <td>${version}</td>
+                                    </tr>
+                                `;
+                            }
+                        }
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (sslTableHeadersRendered) {
+                markdownContentHTML += sslTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+            let rsaKeyTableHeadersRendered = false;
+            let rsaKeyTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if the port has cert_details and specifically check the is_key_too_short vulnerability
+                    if (portObj['cert_details'] && portObj['cert_details']['Vulnerabilities']['is_key_too_short']['Value']) {
+                        // Render table headers if not already done
+                        if (!rsaKeyTableHeadersRendered) {
+                            markdownContentHTML += `
+                                <h2>SSL/TLS - Certificate: Weak RSA Keys - <span class="${"cvss-green"}">2.9</span></h2>
+                                <p><strong>Description</strong></p>
+                                <p>The server is using an SSL certificate with a public key considered weak due to its short length. Such keys can potentially be exploited as part of a Man-in-the-Middle (MitM) attack.</p>
+                                <div class="table-title-with-buttons">
+                                    <h3>Weak RSA Keys Table</h3>    
+                                    ${createTableButtons("Weak RSA Keys Table", "weakRsaKeyTable")}
+                                </div>
+                                <table id="weakRsaKeyTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Host</th>
+                                            <th>Port</th>
+                                            <th>Public Key Bits</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
+                            rsaKeyTableHeadersRendered = true;
+                        }
+
+                        // Add a row for this port
+                        rsaKeyTableContent += `
+                            <tr>
+                                                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                <td>${portObj['cert_details']['Key_Size']}</td>
+                            </tr>
+                        `;
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (rsaKeyTableHeadersRendered) {
+                markdownContentHTML += rsaKeyTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+            let expiryTableHeadersRendered = false;
+            let expiryTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if the port has cert_details and specifically check the is_key_too_short vulnerability
+                    if (portObj['cert_details'] && portObj['cert_details']['Vulnerabilities']['is_expired']['Value']) {
+
+
+                            // Render table headers if not already done
+                            if (!expiryTableHeadersRendered) {
+                                markdownContentHTML += `
+                                    <h2>SSL/TLS - Certificate Expiry - <span class="${"cvss-yellow"}">5</span></h2>
+                                    <p><strong>Description</strong></p>
+                                    <p>The affected SSL services had certificates that have expired and are therefore considered invalid, no longer providing the intended authenticity. Users can no longer confirm the identity of the service via a Certificate Authority (CA), and will consequently receive an error when attempting to browse to the server. There have been a number of high profile cases where expired certificates have resulted in wide-spread disruption and damage to a company's reputation. For example, a connection between two servers may rely on a valid certificate, and fail when the certificate cannot be verified. If this connection is responsible for a business-critical function, then the consequences could be significant.</p>
+                                    <div class="table-title-with-buttons">
+                                        <h3>SSL/TLS - Certificate Expiry Table</h3>    
+                                        ${createTableButtons("SSL/TLS - Certificate Expiry Table", "certificateExpiryTable")}
+                                    </div>
+                                    <table id="certificateExpiryTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Host</th>
+                                                <th>Port</th>
+                                                <th>Expiry Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                `;
+                                expiryTableHeadersRendered = true;
+                            }
+
+                            // Add a row for this port
+                            expiryTableContent += `
+                                <tr>
+                                                                    <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                    <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                    <td>${portObj['cert_details']['Validity_End']}</td>
+                                </tr>
+                            `;
+                        
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (expiryTableHeadersRendered) {
+                markdownContentHTML += expiryTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+            let weakHashTableHeadersRendered = false;
+            let weakHashTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if the port has cert_details and specifically check the is_key_too_short vulnerability
+                    if (portObj['cert_details'] && portObj['cert_details']['Vulnerabilities']['uses_weak_hash']['Value']) {
+
+
+                            // Render table headers if not already done
+                            if (!weakHashTableHeadersRendered) {
+                                markdownContentHTML += `
+                                    <h2>SSL/TLS - Certificate Signed Using Weak Hashing Algorithm - <span class="${"cvss-green"}">3.9</span></h2>
+                                    <p><strong>Description</strong></p>
+                                    <p>The server is using an insecure SSL certificate signed using a hashing algorithm no longer considered to be cryptographically secure. It is possible (albeit unlikely) that an attacker can leverage this issue to create a fake SSL certificate with an identical signature, exploiting weaknesses in the hashing algorithm.</p>
+                                    <div class="table-title-with-buttons">
+                                        <h3>Weak Hashing Algorithm Table</h3>    
+                                        ${createTableButtons("Weak Hashing Algorithm Table", "weakHashAlgorithmTable")}
+                                    </div>
+                                    <table id="weakHashAlgorithmTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Host</th>
+                                                <th>Port</th>
+                                                <th>Public Key Algorithm</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                `;
+                                weakHashTableHeadersRendered = true;
+                            }
+
+                            // Add a row for this port
+                            weakHashTableContent += `
+                                <tr>
+                                                                    <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                    <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                    <td>${portObj['cert_details']['Public_Key_Algorithm']}</td>
+                                </tr>
+                            `;
+                        
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (weakHashTableHeadersRendered) {
+                markdownContentHTML += weakHashTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+            let wrongHostnameTableHeadersRendered = false;
+            let wrongHostnameTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if the port has cert_details and specifically check the is_key_too_short vulnerability
+                    if (portObj['cert_details'] && portObj['cert_details']['Vulnerabilities']['hostname_mismatch']['Value']) {
+
+                            if (!wrongHostnameTableHeadersRendered) {
+                                markdownContentHTML += `
+                                    <h2>SSL/TLS - Certificate with Wrong Hostname - <span class="${"cvss-yellow"}">5</span></h2>
+                                    <p><strong>Description</strong></p>
+                                    <p>The services listed below were configured with SSL certificates that contained a mismatch between the ‘Common Name’ (CN) attribute and the identified hostname. The CN attribute is the name for which the SSL certificate has been created to protect, so the certificate is only valid if this matches the hostname of the system to which the user is connecting. A mismatch could suggest a misconfiguration when creating and implementing the certificate. Any configuration issue could introduce exploitable vulnerabilities, as the certificate may not provide the intended levels of assurance of the hosts’ identity, or the integrity and confidentiality of any associated data.</p>
+                                    <div class="table-title-with-buttons">
+                                        <h3>Certificate with Wrong Hostname Table</h3>    
+                                        ${createTableButtons("Certificate with Wrong Hostname Table", "wrongHostnameTable")}
+                                    </div>
+                                    <table id="wrongHostnameTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Host</th>
+                                                <th>Port</th>
+                                                <th>Common Name</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                `;
+                                wrongHostnameTableHeadersRendered = true;
+                            }
+
+                       
+
+                            // Add a row for this port
+                            wrongHostnameTableContent += `
+                                <tr>
+                                                                    <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                    <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                    <td>${portObj['cert_details']['Subject_CN']}</td>
+                                </tr>
+                            `;
+                        
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (wrongHostnameTableHeadersRendered) {
+                markdownContentHTML += wrongHostnameTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+
+
+
+
+
+
+
+            let closeExpireTableHeadersRendered = false;
+            let closeExpireTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if the port has cert_details and specifically check the is_key_too_short vulnerability
+                    if (portObj['cert_details'] && portObj['cert_details']['Vulnerabilities']['is_close_to_expiring']['Value']) {
+                        // Render table headers if not already done
+                        if (!closeExpireTableHeadersRendered) {
+                            markdownContentHTML += `
+                                <h2>SSL Certificate Chain Contains Certificates Expiring Soon - <span class="${"cvss-blue"}">0</span></h2>
+                                <p><strong>Description</strong></p>
+                                <p>The remote host has an SSL certificate chain with one or more SSL certificates that are going to expire soon. Failure to renew these certificates before the expiration date may result in Denial-of-Service for users.</p>
+                                <div class="table-title-with-buttons">
+                                    <h3>Certificates Close To Being Expired Table</h3>    
+                                    ${createTableButtons("Expiring Certificates Table", "closeExpireTable")}
+                                </div>
+                                <table id="closeExpireTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Host</th>
+                                            <th>Port</th>
+                                            <th>Public Key Bits</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
+                            closeExpireTableHeadersRendered = true;
+                        }
+
+                        // Add a row for this port
+                        closeExpireTableContent += `
+                            <tr>
+                                                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                <td>${portObj['cert_details']['Validity_End']}</td>
+                            </tr>
+                        `;
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (closeExpireTableHeadersRendered) {
+                markdownContentHTML += closeExpireTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+            let tooLongExpireTableHeadersRendered = false;
+            let tooLongExpireTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if the port has cert_details and specifically check the is_too_long vulnerability
+                    if (portObj['cert_details'] && portObj['cert_details']['Vulnerabilities']['is_too_long']['Value']) {
+                        // Render table headers if not already done
+                        if (!tooLongExpireTableHeadersRendered) {
+                            markdownContentHTML += `
+                                <h2>Excessive SSL/TLS Certificate Validity - <span class="${"cvss-green"}">2.9</span></h2>
+                                <p><strong>Description</strong></p>
+                                <p>Certificates issued after March 1st, 2018, may not be valid for longer than 825 days. Certificates issued after July 1st, 2016, through March 1st, 2018, may not be valid for longer than 39 months. Certificates issued on or before July 1st, 2016, may not be valid for longer than 60 months.</p>
+                                <div class="table-title-with-buttons">
+                                    <h3>Long Validity Period Certificates Table</h3>
+                                    ${createTableButtons("Long Validity Period Certificates Table", "tooLongExpireTable")}
+                                </div>
+                                <table id="tooLongExpireTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Host</th>
+                                            <th>Port</th>
+                                            <th>Validity Start</th>
+                                            <th>Validity End</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
+                            tooLongExpireTableHeadersRendered = true;
+                        }
+
+                        // Add a row for this port
+                        tooLongExpireTableContent += `
+                            <tr>
+                                                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                <td>${portObj['cert_details']['Validity_Start']}</td>
+                                <td>${portObj['cert_details']['Validity_End']}</td>
+                            </tr>
+                        `;
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (tooLongExpireTableHeadersRendered) {
+                markdownContentHTML += tooLongExpireTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+            let selfSignedTableHeadersRendered = false;
+            let selfSignedTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if the port has cert_details and specifically check the is_self_signed vulnerability
+                    if (portObj['cert_details'] && portObj['cert_details']['Vulnerabilities']['is_self_signed']['Value']) {
+                        // Render table headers if not already done
+                        if (!selfSignedTableHeadersRendered) {
+                            markdownContentHTML += `
+                                <h2>SSL/TLS - Self-Signed Certificate - <span class="${"cvss-yellow"}">6.4</span></h2>
+                                <p><strong>Description</strong></p>
+                                <p>The SSL certificate used by the affected services was self-signed (not signed by a genuine Certificate Authority). Self-signed certificates are signed using their own private key, rather than requesting a key from an established authority, and therefore do not provide the intended assurances of authenticity.</p>
+                                <div class="table-title-with-buttons">
+                                    <h3>Self-Signed Certificates Table</h3>
+                                    ${createTableButtons("Self-Signed Certificates Table", "selfSignedTable")}
+                                </div>
+                                <table id="selfSignedTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Host</th>
+                                            <th>Port</th>
+                                            <th>Issuer</th>
+                                            <th>Subject</th>
+                              
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
+                            selfSignedTableHeadersRendered = true;
+                        }
+
+                        // Add a row for this port
+                        selfSignedTableContent += `
+                            <tr>
+                                                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                <td>${portObj['cert_details']['Issuer_CN']}</td>
+                                <td>${portObj['cert_details']['Subject_CN']}</td>
+                            </tr>
+                        `;
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (selfSignedTableHeadersRendered) {
+                markdownContentHTML += selfSignedTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+            let wildcardTableHeadersRendered = false;
+            let wildcardTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if the port has cert_details and specifically check the is_wildcard vulnerability
+                    if (portObj['cert_details'] && portObj['cert_details']['Vulnerabilities']['is_wildcard']['Value']) {
+                        // Render table headers if not already done
+                        if (!wildcardTableHeadersRendered) {
+                            markdownContentHTML += `
+                                <h2>Wildcard TLS Certificate in Use - <span class="${"cvss-blue"}">0</span></h2>
+                                <p><strong>Description</strong></p>
+                                <p>The target host was discovered to use a wildcard TLS certificate. Wildcard certificates are public-key certificates that can be used with multiple subdomains of a domain. However, the underlying private key would have to be distributed across several sites. If one of the sites is compromised, the compromised private key can be used to target the rest of the group's sites.</p>
+                                <div class="table-title-with-buttons">
+                                    <h3>Wildcard Certificates Table</h3>
+                                    ${createTableButtons("Wildcard Certificates Table", "wildcardTable")}
+                                </div>
+                                <table id="wildcardTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Host</th>
+                                            <th>Port</th>
+                                            <th>Subject</th>
+                   
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
+                            wildcardTableHeadersRendered = true;
+                        }
+
+                        // Add a row for this port
+                        wildcardTableContent += `
+                            <tr>
+                                <td>${hostObj.host.join(", ")}</td>
+                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                <td>${portObj['cert_details']['Subject_CN']}</td>
+                            </tr>
+                        `;
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (wildcardTableHeadersRendered) {
+                markdownContentHTML += wildcardTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+
+
+
+            let unencryptedTableHeadersRendered = false;
+            let unencryptedTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if the service is running over HTTP
+                    if (portObj.service === 'http') {
+                        // Render table headers if not already done
+                        if (!unencryptedTableHeadersRendered) {
+                            markdownContentHTML += `
+                                <h2>Unencrypted Communication (HTTP) - <span class="${"cvss-yellow"}">6.9</span></h2>
+                                <p><strong>Description</strong></p>
+                                <p>The application does not send sensitive data over an encrypted connection. This means that sensitive data, such as credentials, are sent in cleartext. An attacker on the same network as a victim would be able to see any traffic sent to the application in cleartext.</p>
+                                <div class="table-title-with-buttons">
+                                    <h3>Unencrypted Communication Table</h3>    
+                                    ${createTableButtons("Unencrypted Communication Table", "unencryptedCommunicationTable")}
+                                </div>
+                                <table id="unencryptedCommunicationTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Host</th>
+                                            <th>Port</th>
+                                            <th>Service</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
+                            unencryptedTableHeadersRendered = true;
+                        }
+
+                        // Add a row for this host and port
+                        unencryptedTableContent += `
+                            <tr>
+                                                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                <td>${portObj.service}</td>
+                            </tr>
+                        `;
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (unencryptedTableHeadersRendered) {
+                markdownContentHTML += unencryptedTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+            let directIpAccessTableHeadersRendered = false;
+            let directIpAccessTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if direct IP access is allowed
+                    if (portObj.direct_ip_access === 'True') {
+                        // Render table headers if not already done
+                        if (!directIpAccessTableHeadersRendered) {
+                            markdownContentHTML += `
+                                <h2>Direct IP Address Access - <span class="${"cvss-blue"}">0</span></h2>
+                                <p><strong>Description</strong></p>
+                                <p>The application is accessible by directly browsing to the IP address. Accessing the application in this manner may bypass some defences that have been implemented to secure the application, such security headers and Web Application Firewall defences. It may also be possible to access web pages that are not accessible via FQDN access, like default web server pages.</p>
+                                <div class="table-title-with-buttons">
+                                    <h3>Direct IP Address Access Table</h3>    
+                                    ${createTableButtons("Direct IP Address Access Table", "directIpAccessTable")}
+                                </div>
+                                <table id="directIpAccessTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Host</th>
+                                            <th>Port</th>
+                                            <th>Direct IP Access</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
+                            directIpAccessTableHeadersRendered = true;
+                        }
+
+                        // Add a row for this host and port
+                        directIpAccessTableContent += `
+                            <tr>
+                                                                                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+
+                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                <td>${portObj.direct_ip_access}</td>
+                            </tr>
+                        `;
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (directIpAccessTableHeadersRendered) {
+                markdownContentHTML += directIpAccessTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+            let adminLoginPageTableHeadersRendered = false;
+            let adminLoginPageTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if there are interesting links and iterate over them
+                    if (portObj.interesting_links) {
+                        portObj.interesting_links.forEach(linkObj => {
+                            // Check if it's an admin page with code 200
+                            if (linkObj.Directory.includes('admin') && linkObj.Code === 200) {
+                                // Render table headers if not already done
+                                if (!adminLoginPageTableHeadersRendered) {
+                                    markdownContentHTML += `
+                                        <h2><span class="${"cvss-orange"}"></span>Public-Facing Administrative Login Page - <span class="${"cvss-orange"}">8.5</span></h2>
+                                        <p><strong>Description</strong></p>
+                                        <p>The application hosts a publicly available administrative login page. These login pages are high-priority targets for an attacker due to the sensitive functionality that usually sits behind them. It is often possible to add/delete users, edit the page template, and make application-critical changes through administrative login portals. If an attacker were able to brute-force or gain access to valid credentials through another attack vector, they would control the sensitive functionalities.</p>
+                                        <div class="table-title-with-buttons">
+                                            <h3>Administrative Login Page Table</h3>    
+                                            ${createTableButtons("Administrative Login Page Table", "adminLoginPageTable")}
+                                        </div>
+                                        <table id="adminLoginPageTable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Host</th>
+                                                    <th>Port</th>
+                                                    <th>Service</th>
+                                                    <th>Admin Page Location</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                    `;
+                                    adminLoginPageTableHeadersRendered = true;
+                                }
+
+                                // Add a row for this host, port, and admin page
+                                adminLoginPageTableContent += `
+                                    <tr>
+                                                                        <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                        <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                        <td>${portObj.service}</td>
+                                        <td>/${linkObj.Directory}</td> 
+                                    </tr>
+                                `;
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (adminLoginPageTableHeadersRendered) {
+                markdownContentHTML += adminLoginPageTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+
+            let robotsPageTableHeadersRendered = false;
+            let robotsPageTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    if (portObj.interesting_links) {
+                        portObj.interesting_links.forEach(linkObj => {
+                            // Check if it's a robots.txt page with code 200
+                            if (linkObj.URL.includes('robots.txt') && linkObj.Code === 200) {
+                                // Render table headers if not already done
+                                if (!robotsPageTableHeadersRendered) {
+                                    markdownContentHTML += `
+                                            <h2>Robots.txt Information Disclosure - <span class="${"cvss-green"}">1.8</span></h2>
+                                            <p><strong>Description</strong></p>
+                                            <p>Gathering information, such as directory names, is often the first stage of a targeted attack. Publicly available tools exist that check for the presence of the robots.txt file.</p>
+                                            <div class="table-title-with-buttons">
+                                                <h3>Robots.txt Table</h3>    
+                                                ${createTableButtons("Robots.txt Table", "robotsPageTable")}
+                                            </div>
+                                            <table id="robotsPageTable">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Host</th>
+                                                        <th>Port</th>
+                                                        <th>Service</th>
+                                                        <th>Robots Page</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                        `;
+                                        robotsPageTableHeadersRendered = true;
+                                    }
+
+                                    // Add a row for this host and port
+                                    robotsPageTableContent += `
+                                        <tr>
+                                                                            <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                                    <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                                    <td>${portObj.service}</td>
+                                                    <td>/${linkObj.Directory}</td> 
+                                        </tr>
+                                        `;
+                            }
+                        });
+                    }
+                });
+            });
+
+
+            // Append table content if headers were rendered
+            if (robotsPageTableHeadersRendered) {
+                markdownContentHTML += robotsPageTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+            let sitemapTableHeadersRendered = false;
+            let sitemapTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    if (portObj.interesting_links) {
+                        portObj.interesting_links.forEach(linkObj => {
+                            // Check if it's a sitemap page (assuming any status code is acceptable or adjust as needed)
+                            if (linkObj.URL.includes('sitemap')) {
+                                // Render table headers if not already done
+                                if (!sitemapTableHeadersRendered) {
+                                    markdownContentHTML += `
+                                            <h2>XML Sitemap Disclosure - <span class="${"cvss-green"}">1.1</span></h2>
+                                            <p><strong>Description</strong></p>
+                                            <p>The presence of a sitemap can reveal the entire structure of a website, including potentially sensitive URLs, which could be exploited by an attacker.</p>
+                                            <div class="table-title-with-buttons">
+                                                <h3>Sitemap Table</h3>    
+                                                ${createTableButtons("Sitemap Table", "sitemapTable")}
+                                            </div>
+                                            <table id="sitemapTable">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Host</th>
+                                                        <th>Port</th>
+                                                        <th>Service</th>
+                                                        <th>Sitemap Page</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                        `;
+                                        sitemapTableHeadersRendered = true;
+                                    }
+
+                                    // Add a row for this host and port
+                                    sitemapTableContent += `
+                                        <tr>
+                                                                            <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+
+                                                    <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                                    <td>${portObj.service}</td>
+                                                    <td>/${linkObj.Directory}</td> 
+                                        </tr>
+                                        `;
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (sitemapTableHeadersRendered) {
+                markdownContentHTML += sitemapTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+
+            let cookieTableHeadersRendered = false;
+let cookieTableContent = '';
+
+searchResults.forEach(hostObj => {
+    hostObj.ports.forEach(portObj => {
+        // Check if there are cookies
+        if (portObj.cookies) {
+            // Render table headers if not already done
+            if (!cookieTableHeadersRendered) {
+                markdownContentHTML += `
+                    <h2>Non-Session Controlling Cookies Missing Security Flags - <span class="${"cvss-blue"}">0</span></h2>
+                    <p><strong>Description</strong></p>
+                    <p>Cookies used within the application are missing certain security attributes when set in the client’s browser. The lack of such protections may vary in outcome based upon what each respective cookie is used for, so should be reviewed on a per-cookie basis.</p>
+                    <div class="table-title-with-buttons">
+                        <h3>Cookie Table</h3>    
+                        ${createTableButtons("Cookie Table", "cookieTable")}
+                    </div>
+                    <table id="cookieTable">
+                        <thead>
+                            <tr>
+                                <th>Host</th>
+                                <th>Port</th>
+                                <th>Cookie Name</th>
+                                <th>Current Value(s)</th>
+                                <th>Recommended Value(s)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                cookieTableHeadersRendered = true;
+            }
+
+            // Add a row for each cookie of this host and port
+            portObj.cookies.forEach(cookie => {
+                let misconfiguredFlags = [];
+                let currentValues = [];
+                let recommendedValues = [];
+
+                if (!cookie.secure) {
+                    misconfiguredFlags.push("Secure");
+                    currentValues.push("Secure=False");
+                    recommendedValues.push("Secure=True");
+                }
+
+                if (!cookie.httpOnly) {
+                    misconfiguredFlags.push("HttpOnly");
+                    currentValues.push("HttpOnly=False");
+                    recommendedValues.push("HttpOnly=True");
+                }
+
+                if (cookie.sameSite === "None" || cookie.sameSite === "Lax") {
+                    misconfiguredFlags.push("SameSite");
+                    currentValues.push(`SameSite=${cookie.sameSite}`);
+                    recommendedValues.push("SameSite=Strict");
+                }
+
+                cookieTableContent += `
+                    <tr>
+                        <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+                        <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+                        <td>${cookie.name}</td>
+                        <td>${currentValues.join(", ") || "None"}</td>
+                        <td>${recommendedValues.join(", ") || "All Set"}</td>
+                    </tr>
+                `;
+            });
+        }
+    });
+});
+
+
+            // Append table content if headers were rendered
+            if (cookieTableHeadersRendered) {
+                markdownContentHTML += cookieTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+            let httpMethodsTableHeadersRendered = false;
+            let httpMethodsTableContent = '';
+
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if TRACK or TRACE methods are allowed
+                    if (portObj.Options && (portObj.Options.track || portObj.Options.trace)) {
+                        // Render table headers if not already done
+                        if (!httpMethodsTableHeadersRendered) {
+                            markdownContentHTML += `
+                                <h2>HTTP TRACK and TRACE Methods Allowed - <span class="${"cvss-yellow"}">5.3</span></h2>
+                                <p><strong>Description</strong></p>
+                                <p>The remote web server supports the TRACE and/or TRACK methods. TRACE and TRACK are HTTP methods that are used to debug web server connections.</p>
+                                <div class="table-title-with-buttons">
+                                    <h3>HTTP Methods Table</h3>    
+                                    ${createTableButtons("HTTP Methods Table", "httpMethodsTable")}
+                                </div>
+                                <table id="httpMethodsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Host</th>
+                                            <th>Port</th>
+                                            <th>Service</th>
+                                            <th>Allowed Methods</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
+                            httpMethodsTableHeadersRendered = true;
+                        }
+
+                        // Determine allowed methods for display
+                        let allowedMethods = [];
+                        if (portObj.Options.track) allowedMethods.push("TRACK");
+                        if (portObj.Options.trace) allowedMethods.push("TRACE");
+
+                        // Add a row for this host and port
+                        httpMethodsTableContent += `
+                            <tr>
+                                <td>${hostObj.host.join(", ")}</td>
+                                <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+
+                                <td>${portObj.service}</td>
+                                <td>${allowedMethods.join(", ")}</td>
+                            </tr>
+                        `;
+                    }
+                });
+            });
+
+            // Append table content if headers were rendered
+            if (httpMethodsTableHeadersRendered) {
+                markdownContentHTML += httpMethodsTableContent + `</tbody></table><br><br><hr><br><br>`;
+            }
+
+            // Assuming 'markdownContentHTML' is then used to display the content in your application
+
+
+
+            markdownPanel.innerHTML = markdownContentHTML;
+            
+    
+            accordionContainer.appendChild(markdownAccordionButton);
+            accordionContainer.appendChild(markdownPanel);    
+
+
+
+
+
+            // <---------- Port Vulnerbilities ---------->
+
+             // Create accordions for each result
+             searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    let accordionButton = document.createElement("button");
+                    let accordionId = `accordion-${hostObj.host[0]}-${portObj.port}`;
+                    accordionButton.id = accordionId;
+                    accordionButton.className = "accordion";
+                    accordionButton.innerHTML = hostObj.host.length === 2 ? `${hostObj.host[1]} - Port ${portObj.port}` : `${hostObj.host[0]} - Port ${portObj.port}`;
+                    
+                    // Create a new panel for each port
+                    let panel = document.createElement("div");
+                    panel.className = "panel";
+
+                    // Initialize contentHTML for each port
+                    let contentHTML = "";
+
+                    // Screenshot
+                    if (portObj.screenshot) {
+                        contentHTML += `<a href="${portObj.service}://${hostObj.host[0]}:${portObj.port}" target="_blank"><img src="/${portObj.screenshot}" alt="Screenshot of ${hostObj.host[0]} on port ${portObj.port}" style="max-width:100%;height:auto;"></a>`;
+                    }
+
+                    function isIPAddress(host) {
+                        return /^(\d{1,3}\.){3}\d{1,3}$/.test(host);
+                    }
+
+                    // Get domain names, excluding IP addresses
+
+
+                    function getColorForStatusCode(statusCode) {
+                        if (statusCode >= 200 && statusCode < 300) {
+                            return "green"; // Success responses
+                        } else if (statusCode >= 300 && statusCode < 400) {
+                            return "blue"; // Redirection messages
+                        } else if (statusCode >= 400 && statusCode < 500) {
+                            return "red"; // Client error responses
+                        } else if (statusCode >= 500) {
+                            return "orange"; // Server error responses
+                        } else {
+                            return "gray"; // Unknown status
+                        }
+                    }
+
+                    // Assuming 'hostObj.host' is an array of domain names/IP addresses
+                    let domainNames = hostObj.host.filter(host => !isIPAddress(host)).join(", ");
+                    
+                    // Headers Table with copyable content and colored response code
+                    contentHTML += `
+                    <br>
+                        <h2>Port Overview</h2>
+                        
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Service</th>
+                                    <th>IP Address</th>
+                                    <th>Domain Name(s)</th>
+                                    <th>Response Code</th>
+                                    <th>CMS</th> <!-- Always including CMS column based on updated requirements -->
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>${portObj.service}</td>
+                                    <td><span class="copyable2" title="Click to copy">${portObj.IP_address}</span></td>
+                                    <td><span class="copyable2" title="Click to copy">${domainNames}</span></td>
+                                    <td><span style="color: ${getColorForStatusCode(portObj.status_code)};">${portObj.status_code}</span> - ${portObj.status_message}</td>
+                                    ${
+                                        portObj.cms && portObj.cms.CMS !== 'None'? 
+                                    `<td style="border: 2px solid ${portObj.cms.vulnerability.colour};">
+                                        ${portObj.cms.CMS} ${portObj.cms.version ? portObj.cms.version : ''} 
+                                        <br>
+                                        <span style="color: ${portObj.cms.vulnerability.colour};">
+                                        </span>
+                                    </td>` : 
+                                    '<td>N/A</td>'
+                                    }
+                                </tr>
+                            </tbody>
+                        </table>
+                    <br>
+                    <hr>
+                    `;
+
+                    // Ensure getColorForStatusCode is defined and domainNames is correctly populated.
+                    // This script now adds a CMS column unconditionally but populates it based on available data.
+                    // If CMS data is present, it includes the CMS name, version (if available), and highlights vulnerabilities.
+                    // The border color of the CMS cell changes based on the vulnerability color specified in the input.
+
+
+
+                    // Include CSS for .copyable to indicate it's copyable, e.g., cursor: pointer;
+                    // Implement a simple JavaScript function to handle copying text when .copyable elements are clicked.
+
+
+
+
+
+                    // Headers Table
+                    contentHTML += `
+                    <br>
+                        <h2>Security Headers</h2>
+                        <p><strong>Description</strong></p>
+                        <p>The table below lists the security headers recommended for all websites.</p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>X-Frame-Options</th>
+                                    <th>X-Content-Type-Options</th>
+                                    <th>Content-Security-Policy</th>
+                                    <th>Strict-Transport-Security</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="copyable2" style="border: 2px solid ${portObj.headers['X-Frame-Options'] ? portObj.headers['X-Frame-Options'].color : 'red'}">${portObj.headers['X-Frame-Options'] ? portObj.headers['X-Frame-Options'].value : 'Missing!'}</td>
+                                    <td class="copyable2" style="border: 2px solid ${portObj.headers['X-Content-Type-Options'] ? portObj.headers['X-Content-Type-Options'].color : 'red'}">${portObj.headers['X-Content-Type-Options'] ? portObj.headers['X-Content-Type-Options'].value : 'Missing!'}</td>
+                                    <td class="copyable2" style="border: 2px solid ${portObj.headers['Content-Security-Policy'] ? portObj.headers['Content-Security-Policy'].color : 'red'}">${portObj.headers['Content-Security-Policy'] ? portObj.headers['Content-Security-Policy'].value : 'Missing!'}</td>
+                                    <td class="copyable2" style="border: 2px solid ${portObj.headers['Strict-Transport-Security'] ? portObj.headers['Strict-Transport-Security'].color : 'red'}">${portObj.headers['Strict-Transport-Security'] ? portObj.headers['Strict-Transport-Security'].value : 'Missing!'}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    <br>
+                    <hr>
+                    
+                    `;
+
+
+
+
+                    if (portObj.headers_to_remove) {
+                        contentHTML += generateHeadersToRemoveTable2(portObj.headers_to_remove);
+                    }
+
+
+                    if (portObj.interesting_links && portObj.interesting_links.length > 0) {
+                        // Identify unique response codes
+                        const uniqueCodes = [...new Set(portObj.interesting_links.map(link => link.Code))].sort();
+
+                        contentHTML += `<br><h2>Interesting Directories and Files</h2>
+                        <p><strong>Description</strong></p>
+                        <p>The table below shows any intrestings directories found. These directories may disclose software versions or reveal sensitive information.</p>`;
+                        
+                        contentHTML += `<table border="1" style="width:100%; border-collapse: collapse;"><thead><tr>`;
+
+                        // Create table headers for each unique response code
+                        uniqueCodes.forEach(code => {
+                            contentHTML += `<th>${code}</th>`;
+                        });
+
+                        contentHTML += `</tr></thead><tbody>`;
+
+                        // Assuming each row should have one link per code, find the max number of links for a single code to determine row count
+                        let maxLinksPerCode = 0;
+                        uniqueCodes.forEach(code => {
+                            const count = portObj.interesting_links.filter(link => link.Code === code).length;
+                            maxLinksPerCode = Math.max(maxLinksPerCode, count);
+                        });
+
+                        // Fill table rows with links, leaving empty cells where a code has no link
+                        for (let i = 0; i < maxLinksPerCode; i++) {
+                            contentHTML += `<tr>`;
+                            uniqueCodes.forEach(code => {
+                                const link = portObj.interesting_links.filter(link => link.Code === code)[i];
+                                if (link) {
+                                    contentHTML += `<td>
+                                        <a href="${link.URL}" target="_blank" style="text-decoration: none; color: inherit;"
+                                        onmouseover="this.style.color='${link.Colour}';"
+                                        onmouseout="this.style.color='inherit';">
+                                            ${link.Directory} - Length: ${link.Length}
+                                        </a>
+                                    </td>`;
+                                } else {
+                                    contentHTML += `<td></td>`;
+                                }
+                            });
+                            contentHTML += `</tr>`;
+                        }
+
+                        contentHTML += `</tbody></table><br><hr>`;
+}
+
+ 
+
+
+                    // Check if software is present
+                    if (portObj.software) {
+                        // Software Table
+                        contentHTML += `
+                        <br>
+                        <h2>Software</h2>
+                        <p><strong>Description</strong></p>
+                        <p>This table shows the software running on the port. This tool does not check the End-of-Life status of software.
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Library</th>
+                                        <th>Current Version</th>
+                                        <th>Latest Version</th>
+                                        <th>CVE</th>
+                                        <th>POC (Discovery Method)</th>
+                                    </tr>
+                                </thead>
+                            <tbody>
+                        `;
+
+                        portObj.software.forEach(softwareObj => {
+
+                            // Apply the style to the current version if the software is outdated
+                            let currentVersionStyle = softwareObj.outdated ? 'style="border: 2px solid orange;"' : '';
+
+                            let softwareUrl = `https://security.snyk.io/package/npm/${encodeURIComponent(softwareObj.officialName)}/${encodeURIComponent(softwareObj.version)}`;
+
+                            // Create CVE links styled like regular text
+                            let cveLinks = softwareObj.cve && softwareObj.cve.length > 0
+                                ? softwareObj.cve.map(cveObj => {
+                                    let color;
+                                    switch (cveObj.level) {
+                                        case 'info':
+                                            color = 'blue';
+                                            break;
+                                        case 'low':
+                                            color = 'green';
+                                            break;
+                                        case 'medium':
+                                            color = 'yellow';
+                                            break;
+                                        case 'high':
+                                            color = 'orange';
+                                            break;
+                                        case 'critical':
+                                            color = 'red';
+                                            break;
+                                        default:
+                                            color = 'inherit'; // Default color
+                                    }
+
+                                    // Setting the color and removing the underline
+                                    return `<a href="https://nvd.nist.gov/vuln/detail/${cveObj.cve}" target="_blank" style="color: ${color}; text-decoration: none;">${cveObj.cve}</a>`;
+                                }).join('<br>')
+                                : 'N/A';
+
+
+                            contentHTML += `
+                                <tr>
+                                    <td><span class="clickable-library" style="cursor: pointer;" onclick="window.open('${softwareUrl}', '_blank')">${softwareObj.library}</span></td>
+                                    <td ${currentVersionStyle}>${softwareObj.version}</td> <!-- Applied style to the current version -->
+                                    <td>${softwareObj.latest_version || "N/A"}</td>
+                                    <td>${cveLinks}</td>
+                                    <td><span class="copyable">${softwareObj.discover}</span></td>
+                                </tr>
+                            `;
+                        });
+
+                        contentHTML += `</tbody></table>`;
+                        contentHTML += `</tbody></table><br>
+                    <hr>`;
+
+                    }
+
+
+                    // Options Table
+                    if (portObj.Options) {
+                        contentHTML += `
+                        <br>
+                            <h2>HTTP Methods</h2>
+                            <p><strong>Description</strong></p>
+                            <p>The table below contains the allowed HTTP methods. These need to be double checked by the consultant.</p>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Options</th>
+                                        <th>Propfind</th>
+                                        <th>TRACK</th>
+                                        <th>TRACE</th>
+                                        <th>DEBUG</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="border: 2px solid ${portObj.Options.options ? 'yellow' : 'transparent'}">${portObj.Options.options ? 'Allowed' : 'Not Allowed'}</td>
+                                        <td style="border: 2px solid ${portObj.Options.propfind ? 'yellow' : 'transparent'}">${portObj.Options.propfind ? 'Allowed' : 'Not Allowed'}</td>
+                                        <td style="border: 2px solid ${portObj.Options.track ? 'yellow' : 'transparent'}">${portObj.Options.track ? 'Allowed' : 'Not Allowed'}</td>
+                                        <td style="border: 2px solid ${portObj.Options.trace ? 'yellow' : 'transparent'}">${portObj.Options.trace ? 'Allowed' : 'Not Allowed'}</td>
+                                        <td style="border: 2px solid ${portObj.Options.debug ? 'yellow' : 'transparent'}">${portObj.Options.debug ? 'Allowed' : 'Not Allowed'}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        <br>
+                        <hr>
+                        
+                        `;
+                    }
+
+
+
+                    if (portObj.cookies) {
+                        // Cookie Table
+                        contentHTML += `
+                        <br>
+                        <h2>Cookies</h2>
+                        <p><strong>Description</strong></p>
+                        <p>This table shows the cookies on the website. One of these may be a session cookie which would be a medium severity if the flags are not set correctly.</p>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Value</th>
+                                        <th>Secure</th>
+                                        <th>HttpOnly</th>
+                                        <th>SameSite</th>
+                                    </tr>
+                                </thead>
+                            <tbody>
+                        `;
+                        
+                        portObj.cookies.forEach(cookiesObj => {
+                            // Style for cells that need a yellow border
+                            let secureStyle = cookiesObj.secure === false ? 'style="border: 2px solid lightblue"' : '';
+                            let httpOnlyStyle = cookiesObj.httpOnly === false ? 'style="border: 2px solid lightblue"' : '';
+                            let sameSiteStyle = (cookiesObj.sameSite === 'None' || cookiesObj.sameSite === 'Lax') ? 'style="border: 2px solid lightblue"' : '';
+
+                            contentHTML += `
+                                <tr>
+                                    <td>${cookiesObj.name}</td>
+                                    <td>${cookiesObj.value}</td>
+                                    <td ${secureStyle}>${cookiesObj.secure}</td>
+                                    <td ${httpOnlyStyle}>${cookiesObj.httpOnly}</td>
+                                    <td ${sameSiteStyle}>${cookiesObj.sameSite}</td>
+                                </tr>
+                            `;
+                        });
+
+                        contentHTML += `</tbody></table><br><hr>`;
+                    }
+
+                    if (portObj.renegotiation){
+                        // Cookie Table
+                        contentHTML += `
+                        <br>
+                        <h2>Secure Client-Initiated Renegotiation</h2>
+                        <p><strong>Description</strong></p>
+                        <p>This port may potentially be vulnerable to Secure Client-Initiated Renegotiation, further manual checks are needed to confirm this.</p>
+                
+                        <br><hr>`;
+                    }
+
+
+
+                    if (portObj['ssl-ciphers']) {
+                        contentHTML += `<br><h2>Cipher Suites</h2><p><strong>Description</strong></p>`;
+                        contentHTML += `<p>This section displays all the currently running cipher suites. It is recommended to enable only TLS 1.2 and TLS 1.3, ensuring that no weak ciphers are available. It should be noted that this tool does not look for SSLv2 or SSLv3.</p>`;
+                        // Loop through each SSL/TLS version
+                        for (const [version, ciphers] of Object.entries(portObj['ssl-ciphers'])) {
+                            contentHTML += `<h3>${version} Ciphers</h3>`;
+                            contentHTML += `
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Cipher</th>
+                                            <th>Key Exchange</th>
+                                            <th>Vulnerablity</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
+
+                            // Loop through each cipher of the SSL/TLS version
+                            ciphers.forEach(cipherObj => {
+                                // Determine the most severe vulnerability color
+                                let highestSeverityColor = 'plain'; // Default to plain if no vulnerabilities
+                                const colorPriority = ['red', 'orange', 'yellow', 'green', 'blue'];
+                                cipherObj.vulnerabilities.forEach(vuln => {
+                                    if (colorPriority.indexOf(vuln.colour) < colorPriority.indexOf(highestSeverityColor) || highestSeverityColor === 'plain') {
+                                        highestSeverityColor = vuln.colour;
+                                    }
+                                });
+
+                                // Apply the border color based on the highest severity color
+                                let borderColorStyle = highestSeverityColor !== 'plain' ? `style="border: 2px solid ${highestSeverityColor}"` : '';
+
+                                // Stack vulnerabilities in the same cell without displaying their color in text
+                                let vulnerabilitiesHTML = cipherObj.vulnerabilities.map(vuln => `${vuln.vulnerability}`).join('<br>');
+
+                                contentHTML += `
+                                    <tr>
+                                        <td>${cipherObj.cipher}</td>
+                                        <td>${cipherObj.keyExchange}</td>
+                                        <td ${borderColorStyle}>${vulnerabilitiesHTML || "N/A"}</td>
+                                    </tr>
+                                `;
+                            });
+
+                            contentHTML += `</tbody></table><br>`;
+                        }
+                        contentHTML += `<hr>`;
+                    }
+
+
+
+
+                    if (portObj['cert_details']) {
+                        const certDetails = portObj['cert_details'];
+                        const vulnerabilities = certDetails['Vulnerabilities'];
+
+                        // Function to determine the border color based on vulnerabilities
+                        function determineBorderColor(vulnObj) {
+                            if (vulnObj['Value']) {
+                                return vulnObj['Colour'];
+                            }
+                            return 'none'; // Return 'none' if no vulnerability or it's false
+                        }
+
+                        // Assigning border colors based on vulnerabilities
+                        const subjectBorderColor = determineBorderColor(vulnerabilities['is_self_signed']) || determineBorderColor(vulnerabilities['is_wildcard']) || determineBorderColor(vulnerabilities['hostname_mismatch']);
+                        const issuerBorderColor = determineBorderColor(vulnerabilities['is_self_signed']);
+                        const publicKeyBorderColor = determineBorderColor(vulnerabilities['is_key_too_short']);
+                        const signatureAlgorithmBorderColor = determineBorderColor(vulnerabilities['uses_weak_hash']);
+                        const startDateBorderColor = determineBorderColor(vulnerabilities['has_started']);
+                        const endDateBorderColor = determineBorderColor(vulnerabilities['is_expired']) || determineBorderColor(vulnerabilities['is_close_to_expiring']) || determineBorderColor(vulnerabilities['is_too_long']);
+
+                        // Prioritize border colors based on severity
+                        function prioritizeColor(...colors) {
+                            if (colors.includes('Yellow')) return 'Yellow';
+                            if (colors.includes('Blue')) return 'Blue';
+                            if (colors.includes('Green')) return 'Green';
+                            return 'none';
+                        }
+
+                        contentHTML += `<br><h2>SSL Certificate</h2>`;
+                        contentHTML += `<p><strong>Description</strong></p>`;
+                        contentHTML += `<p>This section shows the configuration of the SSL certificate. This needs to be manually checked by the Consultant as sometimes this tool will get the Public key information inncorrect.</p>`;
+                        contentHTML += `
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Subject Name</th>
+                                        <th>Issuer Name</th>
+                                        <th>Public Key</th>
+                                        <th>Public Key Bits</th>
+                                        <th>Start Date</th>
+                                        <th>End Date</th>
+                                        <th>Signature Algorithm</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="border: 2px solid ${prioritizeColor(subjectBorderColor)};">${certDetails['Subject_CN']}</td>
+                                        <td style="border: 2px solid ${prioritizeColor(issuerBorderColor)};">${certDetails['Issuer_CN']}</td>
+                                        <td style="border: 2px solid ${publicKeyBorderColor};">${certDetails['Public_Key_Algorithm']}</td>
+                                        <td style="border: 2px solid ${prioritizeColor(publicKeyBorderColor)};">${certDetails['Key_Size']}</td>
+                                        <td style="border: 2px solid ${prioritizeColor(startDateBorderColor)};">${certDetails['Validity_Start']}</td>
+                                        <td style="border: 2px solid ${prioritizeColor(endDateBorderColor)};">${certDetails['Validity_End']}</td>
+                                        <td style="border: 2px solid ${prioritizeColor(signatureAlgorithmBorderColor)};">${certDetails['Signature_Algorithm']}</td>
+                                    </tr>
+                                </tbody>
+                            </table><br>
+                        `;
+                    }
+
+
+                
+                panel.innerHTML = contentHTML;
+                
+                accordionContainer.appendChild(accordionButton);
+                accordionContainer.appendChild(panel);
+
+                    
+
+                });
+
+            });
+
+
+            const allAccordions = document.querySelectorAll('.accordion');
+                if (allAccordions.length === 2) {
+                    const singleAccordion = allAccordions[1];
+                    singleAccordion.classList.add('active');
+                    const panel = singleAccordion.nextElementSibling;
+
+                    const images = panel.querySelectorAll('img');
+                    let loadedImages = 0;
+                    
+                    images.forEach(img => {
+                        img.onload = () => {
+                            loadedImages++;
+                            if (loadedImages === images.length) {
+                                panel.style.maxHeight = panel.scrollHeight + 'px';
+                            }
+                        };
+
+                        // If the image is already loaded (from cache, for example)
+                        if (img.complete) {
+                            loadedImages++;
+                        }
+                    });
+
+                    // If there are no images, or all images are already loaded
+                    if (images.length === 0 || loadedImages === images.length) {
+                        panel.style.maxHeight = panel.scrollHeight + 'px';
+                    }
+                }
+
+
+            
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+
+            // Add click event listener for accordions
+            document.querySelectorAll('.accordion').forEach(button => {
+                button.addEventListener('click', function() {
+                    this.classList.toggle("active");
+                    let panel = this.nextElementSibling;
+                    if (panel.style.maxHeight) {
+                        panel.style.maxHeight = null;
+                    } else {
+                        panel.style.maxHeight = panel.scrollHeight + "px";
+                    }
+                });
+            });
+
+        })
+        
+
+    // Function to create the buttons
+    function createTableButtons(tableName, tableId) {
+        return `
+            <button class="markdown-button" data-hover-text="Copy table to markdown" onclick="copyTableToMarkdown('${tableName}', '${tableId}')">📋</button>
+            <button class="markdown-button" data-hover-text="Copy IP details to markdown" onclick="bulkAssignAssets('${tableId}')">📄</button>
+        `;
+    }
+
+
+    function bulkAssignAssets(tableId) {
+        const table = document.getElementById(tableId);
+        if (!table) {
+            console.error('Table not found:', tableId);
+            return;
+        }
+
+        let hostPortMap = {}; // Object to store host IPs and their respective ports
+        const rows = table.getElementsByTagName('tr');
+
+        // Iterate over each row in the table
+        for (let i = 1; i < rows.length; i++) { // Starting from 1 to skip the header row
+            const cells = rows[i].getElementsByTagName('td');
+            if (cells.length >= 3) { // Ensure there are enough cells
+                // Extract only the IP part from the host cell, now assuming the format "IP (domain)"
+                let hostCellText = cells[0].textContent.trim();
+                let ipMatch = hostCellText.match(/^([^ ]+) \(([^)]+)\)/); // Regex to extract IP at the start, before the space and domain in parentheses
+                let ip = ipMatch ? ipMatch[1] : hostCellText; // Use the IP if matched, otherwise use the whole text
+
+                const port = cells[1].textContent.trim();
+
+                if (!hostPortMap[ip]) {
+                    hostPortMap[ip] = new Set(); // Use Set to avoid duplicate ports
+                }
+                hostPortMap[ip].add(port);
+            }
+        }
+
+        // Create the formatted string
+        let formattedData = Object.keys(hostPortMap).map(ip => {
+            const ports = Array.from(hostPortMap[ip]).join(',');
+            return `${ip}|TCP|${ports}`;
+        }).join('\n');
+
+        // Copy the formatted string to the clipboard
+        navigator.clipboard.writeText(formattedData)
+            .then(() => alert("Markdown Table Copied to Clipboard!"))
+            .catch(err => console.error('Failed to copy text: ', err));
+    }
+
+
+
+
+    function generateMarkdownFromTable(table) {
+        let markdown = "";
+
+        // Headers
+        let headers = table.querySelectorAll("thead th");
+        headers.forEach(header => {
+            markdown += `| **${header.textContent}** `;
+        });
+        markdown += "|\n";
+
+        // Separator
+        headers.forEach(() => {
+            markdown += "| --- ";
+        });
+        markdown += "|\n";
+
+        // Rows
+        let rows = table.querySelectorAll("tbody tr");
+            rows.forEach(row => {
+                let cells = row.querySelectorAll("td");
+                cells.forEach(cell => {
+                    // Use textContent to get the text without HTML tags
+                    let cellText = cell.textContent.trim();
+                    // Replace newlines with spaces to avoid markdown table break
+                    let cellMarkdown = cellText.replace(/\n/g, " ").trim();
+                    // Encapsulate cell content that includes HTML in backticks to treat it as code (optional, might not be desired)
+                    // cellMarkdown = '`' + cellMarkdown + '`'; // Uncomment this line if you prefer to treat cell content as code
+                    markdown += `| ${cellMarkdown} `;
+                });
+                markdown += "|\n";
+            });
+
+        return markdown;
+    }
+
+
+
+    // Copy table to Markdown function
+    function copyTableToMarkdown(tableName, tableId) {
+        let markdown = `**${tableName}**\n`; // Adding the table name in bold
+        let table = document.getElementById(tableId);
+        markdown += generateMarkdownFromTable(table);
+        
+        // Copying markdown to clipboard
+        navigator.clipboard.writeText(markdown).then(() => {
+            alert("Markdown Table Copied to Clipboard!");
+        }).catch(err => {
+            console.error('Error copying to clipboard: ', err);
+        });
+    }
+
+
+
+    function generateHeadersToRemoveTable2(headersToRemove) {
+
+        if (Object.keys(headersToRemove).length === 0) {
+            // Optional: return a message indicating no headers to remove, or just return an empty string
+            return ''; // or return 'No headers to remove.';
+        }
+        let headersToRemoveHTML = `<br><h2>Interesting Headers</h2><p><strong>Description</strong></p><p>This table below shows any interesting headers which may display unnecessary or dangerous information.</p><table><thead><tr>`;
+
+        // Add each header to be removed as a column header
+        Object.keys(headersToRemove).forEach(header => {
+            headersToRemoveHTML += `<th>${header}</th>`;
+        });
+
+        headersToRemoveHTML += `</tr></thead><tbody><tr>`;
+
+        // Add the data for each header with a colored border if needed
+        Object.values(headersToRemove).forEach(headerData => {
+            let borderStyle = headerData.colour !== 'plain' ? `style="border: 2px solid ${headerData.colour};"` : '';
+            headersToRemoveHTML += `<td ${borderStyle}>${headerData.data}</td>`;
+        });
+
+        headersToRemoveHTML += `</tr></tbody></table><br><hr>`;
+
+        return headersToRemoveHTML;
+    }
+
+    function createResultsFunction(softwareData) {
+        let resultsFunctionString = "function results() {\n    var results = [];\n    var arr = [\n";
+        let addedLibraries = new Set(); // Set to keep track of added libraries
+
+        softwareData.forEach(softwareObj => {
+            // Check if softwareObj has the required property 'library'
+            if (softwareObj && softwareObj.library) {
+                // Check if the library has already been added
+                if (!addedLibraries.has(softwareObj.library)) {
+                    resultsFunctionString += `        'eval(\\'try { "${softwareObj.library}: ".concat(${softwareObj.discover}) } catch { null }\\')',\n`;
+                    addedLibraries.add(softwareObj.library); // Add the library to the set
+                }
+            }
+        });
+
+        resultsFunctionString += "    ];\n    for (var lib in arr) {\n        results.push(eval(arr[lib]));\n    }\n    return results.join('\\n');\n}\nvar a = results();\nconsole.log(a.split('\\n').filter(function(el) { if (el != null) {return el;} }).join('\\n'));";
+        return resultsFunctionString;
+    }
+
+
+    // Function to copy text to clipboard
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(function() {
+            alert('POC Methods Copied!');
+        }, function(err) {
+            alert('Could not copy text: ', err);
+        });
+    }
+
+
+    </script>
+    
+ </body>
+ </html>

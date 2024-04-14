@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NetScan</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+
+</head>
+<body>
+        <div id="mySidebar" class="sidebar">
+            <div class="sidebar-header">
+                <a href="/" class="new-scan-btn">New Scan</a>
+                <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">x</a>
+            </div>
+            <h4 id="searchTitle">Previous Searches</h4>
+            <ul id="search-history">
+                {% for search in previous_searches %}
+                    <li>
+                        <a href="{{ url_for('search', search_id=search['id']) }}" onclick="saveScrollPosition()"">
+                            <span class="search-icon search-date">{{ search['name'] }}</span>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+
+        <div id="settingsMenu" class="settings-menu" style="display:none;">
+            <div class="settings-menu-header">
+                <button class="save-close-btn" onclick="closeAndSaveSettings()">Close and Save</button>
+            </div>
+            <h3 id="searchTitle">Main Settings</h3>
+            <break></break>
+
+            <div class="switch-container">
+                <label class="switch">
+                    Active External
+                    <input type="checkbox" id="fullSwitch">
+                    <span class="slider round"></span>
+                </label>
+
+                <label class="switch">
+                    Active Web
+                    <input type="checkbox" id="AWSwitch">
+                    <span class="slider round"></span>
+                </label>
+
+                <label class="switch">
+                    Passive Scan
+                    <input type="checkbox" id="passiveSwitch">
+                    <span class="slider round"></span>
+                </label>
+                
+                <label class="switch">
+                    Custom Scan
+                    <input type="checkbox" id="customSwitch">
+                    <span class="slider round"></span>
+                </label>
+
+                <label class="switch">
+                    Save Scan
+                    <input type="checkbox" id="saveSwitch">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+
+            <!-- New Section: Individual Controls -->
+            <div class="individual-controls">
+                <h3>Individual Controls</h3> <!-- Title for the new section -->
+                <label class="switch">
+                    Screenshots
+                    <input type="checkbox" id="screenshotsSwitch">
+                    <span class="slider round"></span>
+                </label>
+
+                <label class="switch">
+                    Software
+                    <input type="checkbox" id="softwareSwitch">
+                    <span class="slider round"></span>
+                </label>
+
+                <label class="switch">
+                    Basic Directories
+                    <input type="checkbox" id="basicDirectoriesSwitch">
+                    <span class="slider round"></span>
+                </label>
+
+                <label class="switch">
+                    Certificate
+                    <input type="checkbox" id="certificateSwitch">
+                    <span class="slider round"></span>
+                </label>
+
+                <label class="switch">
+                    SSL Ciphers
+                    <input type="checkbox" id="sslCiphersSwitch">
+                    <span class="slider round"></span>
+                </label>
+
+                <label class="switch">
+                    Basic Fuzzing
+                    <input type="checkbox" id="bruteForceSwitch">
+                    <span class="slider round"></span>
+                </label>
+
+                <label class="switch">
+                    Cookies
+                    <input type="checkbox" id="cookiesSwitch">
+                    <span class="slider round"></span>
+                </label>
+                <label class="switch">
+                    HTTP Methods
+                    <input type="checkbox" id="methodsSwitch">
+                    <span class="slider round"></span>
+                </label>
+
+               
+
+                <!-- Future Improvements
+                <label class="switch">
+                    Spider
+                    <input type="checkbox" id="spiderSwitch">
+                    <span class="slider round"></span>
+                </label>
+                -->
+            </div>
+
+            <!-- New Section: Individual Controls -->
+            <div class="individual-controls">
+                <h3>Performance Controls</h3> <!-- Title for the new section -->
+                
+                <label for="numberInput">
+                Threads (Max 20)
+                    <input type="number" id="threadsInput" name="threadsInput">
+                </label>
+
+                <label for="numberInput">
+                    Timeout (Min 1)
+                    <input type="number" id="timeoutInput" name="timeoutInput">
+                </label>
+
+                <label for="numberInput">
+                    Delay (Min 1)
+                    <input type="number" id="delayInput" name="delayInput">
+                </label>
+
+                <!--
+                <label class="switch">
+                    Allow Redirects
+                    <input type="checkbox" id="bruteForceSwitch">
+                    <span class="slider round"></span>
+                </label>
+            -->
+            </div>
+
+       
+        </div>
+        
+        
+        <div id="main">
+            <button id="openbtn" class="openbtn" onclick="openNav()">☰</button>
+            <button id="settingsBtn" class="settingsBtn" onclick="toggleSettingsMenu()">⚙️</button>
+            
+            
+            
+            <div id="form-container">
+                <form action="/" method="post" enctype="multipart/form-data" onsubmit="return validateForm()">
+                    <input type="text" id="scanNameInput" name="scanName" placeholder="Input Scan Name" maxlength="20" />
+                    
+                    <div class="input-and-buttons">
+                        <div style="position: relative;">
+                            <button type="button" data-hover-text="Upload a nmap.txt file" id="fileButton" class="icon-button">📎</button>
+                        </div>
+                        
+                        <input type="file" id="fileInput" name="nmapFile" accept=".txt" style="display: none;" onchange="updateFileButton()">
+                        <textarea id="domain-input" name="url" placeholder="https://www.example.com"></textarea>
+                        <div style="position: relative;">
+                            <button id="submitButton" data-hover-text="Start Scan" type="submit" class="icon-button">🔎</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            
+            
+        
+            <div class="loader" style="display:none;"></div>
+            <ul id="messageList"></ul> <!-- Container for messages -->
+
+
+            <div class="toolName" style="display: block;">
+                <h1>NetScan</h1>
+                <div class="byLine">by Jack Mason</div>
+            </div>
+            
+        </div>
+
+
+    <script>
+
+    function saveScrollPosition() {
+        const sidebar = document.getElementById('mySidebar');
+        localStorage.setItem('sidebarScrollPosition', sidebar.scrollTop);
+    }
+
+    function updateFileButton() {
+        var fileInput = document.getElementById('fileInput');
+        var fileButton = document.getElementById('fileButton');
+        var fileNameDisplay = document.getElementById('fileNameDisplay');
+        
+        if (fileInput.files.length > 0) {
+            fileButton.textContent = '✅'; // Change icon to checkmark
+            fileNameDisplay.textContent = fileInput.files[0].name; // Display file name
+        }
+    }
+
+    
+document.getElementById('fileButton').addEventListener('click', function() {
+    document.getElementById('fileInput').click(); // Trigger file input click
+});
+
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+        socket.on('response', function(data) {
+            console.log(data.data);
+            // Update the frontend
+        });
+
+        socket.on('scan_status', function(data) {
+            console.log(data.message);
+            addMessageToList(data.message);
+        });
+
+        function clearMessageList() {
+            var messageList = document.getElementById('messageList');
+            messageList.innerHTML = '';
+        }
+
+        function addMessageToList(message) {
+            var messageList = document.getElementById('messageList');
+
+            // Create a new list item
+            var newMessageItem = document.createElement('li');
+
+            // Create a span for the message text
+            var messageSpan = document.createElement('span');
+            messageSpan.textContent = message;
+
+            // Append the message text to the list item
+            newMessageItem.appendChild(messageSpan);
+
+            // Move the loading wheel to the new message
+            var loader = document.querySelector('.loader');
+            loader.style.display = 'inline-block';
+            newMessageItem.appendChild(loader);
+
+            // Append the new list item to the list
+            messageList.appendChild(newMessageItem);
+        }
+        
+
+        function createVulnerabilityTemplate(vulnerabilityName, cvssScore, cvssColor, description) {
+            let htmlTemplate = `
+                <div class="vulnerability-container">
+                    <h3 class="vulnerability-title">${vulnerabilityName}</h3>
+                    <div class="cvss-score" style="background-color: ${cvssColor};">${cvssScore}</div>
+                    <p class="vulnerability-description">${description}</p>
+                </div>
+            `;
+
+            return htmlTemplate;
+        }
+
+
+document.getElementById('fullSwitch').addEventListener('change', function() {
+    if (this.checked) {
+        document.getElementById('passiveSwitch').checked = false;
+        document.getElementById('customSwitch').checked = false;
+        document.getElementById('saveSwitch').checked = true;
+        document.getElementById('softwareSwitch').checked = true;
+        document.getElementById('basicDirectoriesSwitch').checked = true;
+        document.getElementById('sslCiphersSwitch').checked = true;
+        document.getElementById('certificateSwitch').checked = true;
+        document.getElementById('bruteForceSwitch').checked = true;
+        document.getElementById('cookiesSwitch').checked = false;
+        document.getElementById('methodsSwitch').checked = false;
+        document.getElementById('screenshotsSwitch').checked = true;
+        document.getElementById('threadsInput').value = 15;
+        document.getElementById('timeoutInput').value = 5;
+        document.getElementById('delayInput').value = 10;
+        document.getElementById('AWSwitch').checked = false;
+    }
+    else{
+        document.getElementById('customSwitch').checked = true;
+    }
+    // Your code to handle 'Full' switch
+});
+
+
+document.getElementById('AWSwitch').addEventListener('change', function() {
+    if (this.checked) {
+        document.getElementById('passiveSwitch').checked = false;
+        document.getElementById('customSwitch').checked = false;
+        document.getElementById('saveSwitch').checked = true;
+        document.getElementById('softwareSwitch').checked = true;
+        document.getElementById('basicDirectoriesSwitch').checked = true;
+        document.getElementById('sslCiphersSwitch').checked = true;
+        document.getElementById('certificateSwitch').checked = true;
+        document.getElementById('bruteForceSwitch').checked = true;
+        document.getElementById('cookiesSwitch').checked = true;
+        document.getElementById('methodsSwitch').checked = true;
+        document.getElementById('screenshotsSwitch').checked = true;
+        document.getElementById('threadsInput').value = 15;
+        document.getElementById('timeoutInput').value = 10;
+        document.getElementById('delayInput').value = 10;
+        document.getElementById('fullSwitch').checked = false;
+    }
+    else{
+        document.getElementById('customSwitch').checked = true;
+    }
+    // Your code to handle 'Full' switch
+});
+
+
+document.getElementById('passiveSwitch').addEventListener('change', function() {
+    if (this.checked) {
+        document.getElementById('fullSwitch').checked = false;
+        document.getElementById('customSwitch').checked = false;
+        document.getElementById('saveSwitch').checked = true;
+        document.getElementById('softwareSwitch').checked = true;
+        document.getElementById('basicDirectoriesSwitch').checked = true;
+        document.getElementById('sslCiphersSwitch').checked = false;
+        document.getElementById('certificateSwitch').checked = true;
+        document.getElementById('bruteForceSwitch').checked = false;
+        document.getElementById('cookiesSwitch').checked = false;
+        document.getElementById('methodsSwitch').checked = false;
+        document.getElementById('screenshotsSwitch').checked = true;
+        document.getElementById('AWSwitch').checked = false;
+        document.getElementById('threadsInput').value = 2;
+        document.getElementById('timeoutInput').value = 5;
+        document.getElementById('delayInput').value = 100;
+
+    }
+    else{
+        document.getElementById('customSwitch').checked = true;
+    }
+    // Your code to handle 'Passive' switch
+});
+
+document.getElementById('customSwitch').addEventListener('change', function() {
+    if (this.checked) {
+        document.getElementById('fullSwitch').checked = false;
+        document.getElementById('passiveSwitch').checked = false;
+    }
+    else{
+        document.getElementById('passiveSwitch').checked = true;
+        document.getElementById('fullSwitch').checked = false;
+        document.getElementById('saveSwitch').checked = true;
+        document.getElementById('softwareSwitch').checked = true;
+        document.getElementById('basicDirectoriesSwitch').checked = true;
+        document.getElementById('sslCiphersSwitch').checked = false;
+        document.getElementById('certificateSwitch').checked = true;
+        document.getElementById('bruteForceSwitch').checked = false;
+        document.getElementById('cookiesSwitch').checked = false;
+        document.getElementById('methodsSwitch').checked = false;
+        document.getElementById('screenshotsSwitch').checked = true;
+
+    }
+    // Your code to handle 'Custom' switch
+});
+
+
+// Function to handle changes to other switches
+function handleOtherSwitchChange() {
+    // Turn on 'customSwitch' and turn off 'fullSwitch' and 'passiveSwitch'
+    document.getElementById('customSwitch').checked = true;
+    document.getElementById('fullSwitch').checked = false;
+    document.getElementById('passiveSwitch').checked = false;
+}
+
+// List of other switches that should trigger the custom mode
+const otherSwitchIds = ['saveSwitch', 'softwareSwitch', 'basicDirectoriesSwitch', 'sslCiphersSwitch', 'certificateSwitch', 'bruteForceSwitch', 'cookiesSwitch', 'methodsSwitch'];
+
+// Add event listeners to other switches
+otherSwitchIds.forEach(switchId => {
+    document.getElementById(switchId).addEventListener('change', function() {
+        // Check if this switch is being turned on, then switch to custom mode
+        if (this.checked) {
+            handleOtherSwitchChange();
+        }
+        else{
+            handleOtherSwitchChange();
+        }
+        // If you need to handle the unchecked state differently, add logic here
+    });
+});
+
+
+
+
+function toggleSettingsMenu() {
+    var settingsMenu = document.getElementById("settingsMenu");
+    if (settingsMenu.style.display === "none") {
+        settingsMenu.style.display = "block";
+    } else {
+        settingsMenu.style.display = "none";
+    }
+}
+
+
+function closeAndSaveSettings() {
+    // Determine which checkbox is checked
+    const scanType = document.getElementById('fullSwitch').checked ? 'Full' :
+                     document.getElementById('AWSwitch').checked ? 'AWScan' :
+                     document.getElementById('passiveSwitch').checked ? 'Passive' :
+                     document.getElementById('customSwitch').checked ? 'Custom' : null;
+
+    const cookiesEnabled = document.getElementById('cookiesSwitch').checked;
+    const bruteForceEnabled = document.getElementById('bruteForceSwitch').checked;
+    // const spiderEnabled = document.getElementById('spiderSwitch').checked;
+    const methodsEnabled = document.getElementById('methodsSwitch').checked;
+    const saveEnabled = document.getElementById('saveSwitch').checked;
+    
+    const softwareEnabled = document.getElementById('softwareSwitch').checked;
+    const basicDirectoriesEnabled = document.getElementById('basicDirectoriesSwitch').checked;
+    const sslCiphersEnabled = document.getElementById('sslCiphersSwitch').checked;
+    const certificateEnabled = document.getElementById('certificateSwitch').checked;
+    const screenshotsEnabled = document.getElementById('screenshotsSwitch').checked;
+
+    const threadsValue = parseInt(document.getElementById('threadsInput').value, 10);
+    const timeoutValue = parseInt(document.getElementById('timeoutInput').value, 10);
+    const delayValue = parseInt(document.getElementById('delayInput').value, 10);
+
+    // Validate the value of threadsValue
+    if (threadsValue < 1 || threadsValue > 20) {
+        // Alert the user and do not proceed with saving settings
+        alert('Please enter a value for Threads between 1 and 20.');
+        return; // Exit the function if validation fails
+    }
+
+    // Validate the value of threadsValue
+    if (timeoutValue < 1) {
+        // Alert the user and do not proceed with saving settings
+        alert('Please enter a value for Timeout above 0.');
+        return; // Exit the function if validation fails
+    }
+
+    // Validate the value of threadsValue
+    if (delayValue < 1) {
+        // Alert the user and do not proceed with saving settings
+        alert('Please enter a value for Delay above 0.');
+        return; // Exit the function if validation fails
+    }
+
+
+
+    // Proceed only if a scan type is selected
+    if (scanType) {
+      
+        fetch('/save-settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                scanType: scanType, 
+                save: saveEnabled,
+                
+                // Other Settings
+
+                httpMethods: methodsEnabled,
+                cookies: cookiesEnabled ,
+                bruteForce: bruteForceEnabled,
+                software: softwareEnabled,
+                basicDirectories: basicDirectoriesEnabled,
+                sslCiphers: sslCiphersEnabled,
+                certificate: certificateEnabled,
+                screenshots: screenshotsEnabled,
+                threads: threadsValue,
+                timeout: timeoutValue,
+                delay: delayValue,
+                // spider: spiderEnabled,
+
+
+
+
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Success:', data);
+            document.getElementById('settingsMenu').style.display = 'none';
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    } else {
+        console.error('No scan type selected');
+    }   
+
+    // Close the settings menu
+    var settingsMenu = document.getElementById("settingsMenu");
+    settingsMenu.style.display = "none";
+}
+
+    
+
+
+
+        function adjustTextareaHeight(textarea) {
+            // Set a base size with no content
+            textarea.style.height = 'auto';
+
+            // Calculate the height
+            var newHeight = textarea.scrollHeight; // This gives the height required for current content
+
+            // Set the new height
+            textarea.style.height = newHeight + 'px';
+            }
+
+            // Event listener for input on textarea
+            document.addEventListener('input', function(event) {
+            if (event.target.tagName.toLowerCase() === 'textarea') {
+                adjustTextareaHeight(event.target);
+        }
+        });
+        
+
+
+        function openNav() {
+            document.getElementById("mySidebar").style.width = "250px";
+            document.getElementById("openbtn").style.display = "none";
+            document.body.style.paddingLeft = "250px"; // Apply padding to body instead
+        }
+
+        function closeNav() {
+            document.getElementById("mySidebar").style.width = "0";
+            document.getElementById("openbtn").style.display = "block";
+            document.body.style.paddingLeft = "0"; // Reset body padding
+        }
+
+        // This function checks the window width and opens/closes the sidebar accordingly
+        function autoToggleNav() {
+            if (window.innerWidth > 1200) { // Assuming 960px is the max width for your 'main'
+                openNav();
+            } else {
+                closeNav();
+            }
+        }
+
+        // Call autoToggleNav on window resize
+        window.addEventListener('resize', autoToggleNav);
+
+        // Also call autoToggleNav on initial load
+        window.addEventListener('load', autoToggleNav);
+
+
+
+       let globalSearchResults = [];
+
+
+       document.querySelector("form").addEventListener("submit", function(e) {
+        e.preventDefault();
+
+        this.submit();
+
+        clearMessageList()
+        document.querySelector(".toolName").style.display = "none";
+        document.querySelector(".loader").style.display = "block";
+
+
+        
+    });
+
+    
+
+
+
+    function clearAccordions() {
+        const accordionContainer = document.getElementById("accordionContainer");
+        accordionContainer.innerHTML = "";
+    }
+    
+
+    function generateHeadersToRemoveTable(headersToRemove) {
+        let headersToRemoveHTML = `<br><h2>Interesting Headers</h2><p>This table below shows any interesting headers which may display unnecessary or dangerous information.</p><table><thead><tr>`;
+
+        // Add each header to be removed as a column header
+        Object.keys(headersToRemove).forEach(header => {
+            headersToRemoveHTML += `<th>${header}</th>`;
+        });
+
+        headersToRemoveHTML += `</tr></thead><tbody><tr>`;
+
+        // Add the data for each header with a colored border if needed
+        Object.values(headersToRemove).forEach(headerData => {
+            let borderStyle = headerData.colour !== 'plain' ? `style="border: 2px solid ${headerData.colour};"` : '';
+            headersToRemoveHTML += `<td ${borderStyle}>${headerData.data}</td>`;
+        });
+
+        headersToRemoveHTML += `</tr></tbody></table><br><hr>`;
+
+        return headersToRemoveHTML;
+    }
+
+
+    window.onload = function() {
+    var settings = JSON.parse('{{ settings | tojson | safe }}');
+
+    console.log("Settings Object:", settings);
+
+    // Check the scanType and set the corresponding switch to active
+    if (settings && settings.scanType) {
+        if (settings.scanType === 'Full') {
+            document.getElementById('fullSwitch').checked = true;
+        } else if (settings.scanType === 'Passive') {
+            document.getElementById('passiveSwitch').checked = true;
+        } else if (settings.scanType === 'Custom') {
+            document.getElementById('customSwitch').checked = true;
+        } else if (settings.scanType === 'AWScan') {
+            document.getElementById('AWSwitch').checked = true;
+        }
+        // Set the cookies switch
+        if (settings.cookies === true) {
+            document.getElementById('cookiesSwitch').checked = true;
+        }
+        if (settings.httpMethods === true) {
+            document.getElementById('methodsSwitch').checked = true;
+        }
+        if (settings.save === true) {
+            document.getElementById('saveSwitch').checked = true;
+        }
+        if (settings.software === true) {
+            document.getElementById('softwareSwitch').checked = true;
+        }
+        if (settings.basicDirectories === true) {
+            document.getElementById('basicDirectoriesSwitch').checked = true;
+        }
+        if (settings.sslCiphers === true) {
+            document.getElementById('sslCiphersSwitch').checked = true;
+        }
+        if (settings.certificate === true) {
+            document.getElementById('certificateSwitch').checked = true;
+        }
+        if (settings.bruteForce === true) {
+            document.getElementById('bruteForceSwitch').checked = true;
+        }
+        if (settings.screenshots === true) {
+            document.getElementById('screenshotsSwitch').checked = true;
+        }
+
+        if (settings.threads) {
+            document.getElementById('threadsInput').value = settings.threads;
+        }
+
+        if (settings.timeout) {
+            document.getElementById('timeoutInput').value = settings.timeout;
+        }
+
+        if (settings.delay) {
+            document.getElementById('delayInput').value = settings.delay;
+        }
+
+    } else {
+        console.error("Settings object is undefined or does not have scanType property");
+    }
+}
+
+
+
+    function createResultsFunction(softwareData) {
+        let resultsFunctionString = "function results() {\n    var results = [];\n    var arr = [\n";
+        let addedLibraries = new Set(); // Set to keep track of added libraries
+
+        softwareData.forEach(softwareObj => {
+            // Check if the library has already been added
+            if (!addedLibraries.has(softwareObj.library)) {
+                resultsFunctionString += `        'eval(\\'try { "${softwareObj.library}: ".concat(${softwareObj.discover}) } catch { null }\\')',\n`;
+                addedLibraries.add(softwareObj.library); // Add the library to the set
+            }
+        });
+
+        resultsFunctionString += "    ];\n    for (var lib in arr) {\n        results.push(eval(arr[lib]));\n    }\n    return results.join('\\n');\n}\nvar a = results();\nconsole.log(a.split('\\n').filter(function(el) { if (el != null) {return el;} }).join('\\n'));";
+        return resultsFunctionString;
+    }
+
+    // Function to copy text to clipboard
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(function() {
+            alert('POC Methods Copied!');
+        }, function(err) {
+            alert('Could not copy text: ', err);
+        });
+    }
+
+    document.addEventListener('click', function(event) {
+        if (event.target.classList.contains('copyable')) {
+            const softwareData = globalSearchResults.map(hostObj => hostObj.ports.map(portObj => portObj.software).flat()).flat();
+            console.log("softwareData:", softwareData); // Check what's in softwareData
+            const functionString = createResultsFunction(softwareData);
+            copyToClipboard(functionString);
+        }
+    });
+
+
+    
+
+
+
+
+
+    </script>
+</body>
+</html>
