@@ -311,6 +311,3 @@ def findBasicDirectories(IP_addresses, option, timeout, threads_value, delay):
         results = executor.map(process_address, IP_addresses)
     
     return list(results)
-
-
-#print(findBasicDirectories([{'host': ['www.masontech.com'], 'ports': [{'port': '80', 'service': 'http', 'headers': {'X-Frame-Options': {'value': 'Missing!', 'color': 'yellow'}, 'X-Content-Type-Options': {'value': 'Missing!', 'color': 'yellow'}, 'Content-Security-Policy': {'value': 'Missing!', 'color': 'yellow'}, 'Strict-Transport-Security': {'value': 'Missing!', 'color': 'yellow'}}, 'headers_to_remove': {'server': {'data': 'Apache/2.4.18 (Ubuntu)', 'vulnerability': 'HTTP Header Version Disclosure', 'colour': 'yellow'}}, 'direct_ip_access': 'False', 'content_length': 'True'}, {'port': '443', 'service': 'https', 'headers': {'X-Frame-Options': {'value': 'Missing!', 'color': 'yellow'}, 'X-Content-Type-Options': {'value': 'Missing!', 'color': 'yellow'}, 'Content-Security-Policy': {'value': 'Missing!', 'color': 'yellow'}, 'Strict-Transport-Security': {'value': 'Missing!', 'color': 'yellow'}}, 'headers_to_remove': {'server': {'data': 'Apache/2.4.18 (Ubuntu)', 'vulnerability': 'HTTP Header Version Disclosure', 'colour': 'yellow'}}, 'direct_ip_access': 'False', 'content_length': 'True'}]}], 'basic'))

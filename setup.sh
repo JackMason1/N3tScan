@@ -9,6 +9,9 @@ cat <<EOF > NetScan
 # Hardcode the directory to the script's original location
 cd "$SCRIPT_DIR"
 
+# Deactivate any virtual environments
+deactivate
+
 # Activate the virtual environment
 source ve/bin/activate
 
@@ -39,12 +42,14 @@ wait $NETSCAN_PID
 EOF
 
 # Move NetScan to ~/bin and make it executable
-mv NetScan /opt/homebrew/bin/
-chmod +x /opt/homebrew/bin/NetScan
+mv NetScan /usr/local/bin/
+chmod +x /usr/local/bin/NetScan
 
 source ve/bin/activate
 
+pip3 install --upgrade pip
 pip3 install -r requirements.txt
+pip3 install --upgrade watchdog
 
 brew install nmap
 

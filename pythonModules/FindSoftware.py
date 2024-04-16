@@ -101,9 +101,9 @@ def is_valid_version(version_str):
 
 
 def get_software(address, file):
-    found_software = []
     for target_host in address['host']:
         for target_port in address['ports']:
+            found_software = []
             try:
                 results = []
 

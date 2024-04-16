@@ -1,7 +1,14 @@
-# NetScan
+# NetScan 🔎
 
 ## Description
 NetScan is a tool designed to assist with external infrastructure and web application assessments. It simplifies the process of identifying valid web pages, detecting a range of vulnerabilities, and presenting the findings in easy-to-understand markdown tables for integration into Secure Portal.
+
+## Requirements
+To install this tool the following requirements need to be met:
+- Homebrew installed
+- Python installed
+- Pip installed
+- This tool can only be run on a Mac
 
 ## Installation
 To install NetScan, follow these steps after downloading it from GitHub:
@@ -12,6 +19,8 @@ To install NetScan, follow these steps after downloading it from GitHub:
 
 ## Usage
 To run NetScan, type `NetScan` in your terminal after installation and setup.
+
+
 
 ## Start a Scan
 
@@ -32,7 +41,7 @@ Enter hosts and ports you wish to scan in the domain input field, which accepts 
 Access the settings tab at the top right of the application to activate or deactivate modules. You must press the `Close and Save` button to update the settings; otherwise, they will not be saved.
 - **Note**: Active scans require explicit permission from the customer.
 
----
+
 
 ## Current Modules
 
@@ -66,7 +75,7 @@ This module pulls back the certificate and highlights any vulnerabilities associ
 #### Ciphers
 This module inspects the ciphers and highlights any vulnerable ciphers.
 
----
+
 
 ## Feedback
 Your feedback is important. If you encounter any issues or have suggestions for improvement, please let me know.

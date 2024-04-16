@@ -305,7 +305,7 @@
                                 markdownContentHTML += `
                                     <h2>Unsupported Software Detected - <span class="${"cvss-red"}">10</span> </h2>
                                     <p><strong>Description</strong></p>
-                                    <p>The remote web server was found to be running a variety of outdated and unsupported software packages. In most cases, the attacker needs to have some level of access to the target victim in order to exploit these issues fully. However, some issues were found that can be remotely exploited, reflected in the critical-severity rating. Information about the affected hosts and vulnerable versions can be found in the _Outdated Software_ section, under additional information.</p> <!-- Description left blank as instructed -->
+                                    <p>The remote web server has been found to be running several outdated and unsupported software packages. Typically, an attacker would require a certain level of access to fully exploit these vulnerabilities. However, some vulnerabilities have been identified that can be exploited remotely, as indicated by their critical-severity rating.</p> <!-- Description left blank as instructed -->
                                     <div class="table-title-with-buttons">
                                         <h3>Unsupported Software Table</h3>    
                                         ${createTableButtons("Unsupported Softwares", "unsupportedSoftwareTable")}
@@ -421,7 +421,8 @@
                                 markdownContentHTML += `
                                     <h2>Outdated Software Detected - <span class="${"cvss-orange"}">7.2</span> </h2>
                                     <p><strong>Description</strong></p>
-                                    <p>The target reported running an outdated software version that is potentially vulnerable to multiple issues, including web-based and Denial-of-Service attacks. An attacker exploiting these vulnerabilities can cause disruption to the service or conduct multiple web-based attacks against the target, including the execution of arbitrary client-side scripts. In a worst-case scenario, Remote Code Execution attacks could be launched that could provide an attacker with access to the internal network, depending on the network location of the affected host.</p>                                    <div class="table-title-with-buttons">
+                                    <p>The automated security scan has detected outdated software in the HTTP headers of the web server. This indicates that the server is running software versions that are not current, although they may still be supported by the vendor.</p>
+                                    <div class="table-title-with-buttons">
                                         <h3>Outdated Software Table</h3>    
                                         ${createTableButtons("outdated Softwares", "outdatedSoftwareTable")}
                                     </div>
@@ -491,7 +492,7 @@
                             markdownContentHTML += `
                                 <h2>Missing Security Headers - <span class="${"cvss-yellow"}">4.9</span> </h2>
                                 <p><strong>Description</strong></p>
-                                <p>The web server does not implement several security headers. Omitting these headers leaves users of the application vulnerable to a variety of potential attacks, including Man-in-the-Middle attacks, Cross-Site Scripting, and phishing attacks that ‘steal’ user clicks or data entered into malicious forms.</p>
+                                <p>The web server is found to be lacking several critical security headers. This configuration flaw makes the application susceptible to various security threats, including but not limited to Man-in-the-Middle (MitM) attacks, Cross-Site Scripting (XSS), and phishing schemes designed to capture user interactions or data input into deceptive forms.</p>
                                 <div class="table-title-with-buttons">
                                     <h3>Missing Headers Table</h3>
                                     ${createTableButtons("Missing Security Headers", "missingHeadersTable")}
@@ -553,7 +554,7 @@
                             markdownContentHTML += `
                                 <h2>Misconfigured Content Security Policy - <span class="${"cvss-green"}">2.9</span> </h2>
                                 <p><strong>Description</strong></p>
-                                <p>The Content-Security-Policy (CSP) header was configured to allow access to wildcard and user controllable remote domains. An attacker may be able to exploit this issue if an External Services Interaction (ESI) vulnerability is identified elsewhere on the application.</p>                                
+                                <p>The Content-Security-Policy (CSP) header has been configured to permit access to wildcard and user-controlled remote domains. If an External Service Interaction (ESI) vulnerability is present elsewhere in the application, attackers could potentially exploit this configuration.</p>                                
                                 <div class="table-title-with-buttons">
                                     <h3>Misconfigured Content Security Policy Table</h3>
                                     ${createTableButtons("Misconfigured Content Security Policy", "misconfiguredCspTable")}
@@ -607,7 +608,7 @@
                             markdownContentHTML += `
                                 <h2>Misconfigured Strict-Transport-Security - <span class="${"cvss-green"}">2.9</span> </h2>
                                 <p><strong>Description</strong></p>
-                                <p>During an interrogation of the application's HTTP security headers, the consultant noted that the Strict-Transport-Security (HSTS) was not set to the recommended value.</p>
+                                <p>During an analysis of the application's HTTP security headers, the consultant observed that the Strict-Transport-Security (HSTS) header was not set to the recommended value.</p>
                                 <div class="table-title-with-buttons">
                                     <h3>Misconfigured Strict-Transport-Security Table</h3>
                                     ${createTableButtons("Misconfigured Strict-Transport-Security Headers", "misconfiguredStsTable")}
@@ -658,7 +659,7 @@
                             markdownContentHTML += `
                                 <h2>Deprecated Header In Use: X-XSS Protection - <span class="${"cvss-green"}">2</span> </h2>
                                 <p><strong>Description</strong></p>
-                                <p>The application responded with the X-XSS-Protection header configured to 1; mode=block, which, in certain circumstances, may render an application that was not previously vulnerable to Cross-Site Scripting (XSS) unavailable due to the enforcement of the ‘mode=block’ directive.</p>                                    
+                                <p>The application responded with the X-XSS-Protection header configured to "1; mode=block". In certain circumstances, this setting can make an application that was not previously vulnerable to Cross-Site Scripting (XSS) unavailable due to the enforcement of the 'mode=block' directive.</p>                                    
                                 <div class="table-title-with-buttons">
                                     <h3>X-XSS Protection Table</h3>    
                                     ${createTableButtons("Deprecated Header In Use: X-XSS Protection", "xssProtectionIssuesTable")}
@@ -712,7 +713,7 @@
                             markdownContentHTML += `
                                 <h2>HTTP Header Version Disclosure - <span class="${"cvss-yellow"}">5</span> </h2>
                                 <p><strong>Description</strong></p>
-                                <p>The remote host advertises underlying software versions through HTTP headers via server responses. These software versions can be researched to discover any publicly available vulnerabilities and, if any exist, potentially compromise the underlying server.</p>
+                                <p>The remote host reveals its underlying software versions through HTTP headers in server responses. These disclosed versions allow researchers to identify any publicly known vulnerabilities. If such vulnerabilities exist, they could potentially be exploited to compromise the underlying server.</p>
                                 <div class="table-title-with-buttons">
                                     <h3>HTTP Header Version Disclosure Table</h3>    
                                     ${createTableButtons("HTTP Header Version Disclosures", "headerVersionDisclosureTable")}
@@ -814,7 +815,7 @@
                 markdownContentHTML += `
                     <h2>Outdated Javascript Libraries - <span class="${"cvss-yellow"}">${highestCveScore}</span> </h2>
                     <p><strong>Description</strong></p>
-                    <p>In order to improve the quality and functionality of the application, scripting software is used to perform more complex actions. Some of the software in use is out of date and may be vulnerable to Cross-Site Scripting attacks, which could be used to target users of the application to steal their username and password or install malware.</p>
+                    <p>To enhance the application's quality and functionality, scripting software is employed to execute more complex actions. However, some of this software is outdated and may be susceptible to Cross-Site Scripting (XSS) attacks. Such vulnerabilities could allow attackers to target users of the application, potentially stealing their usernames and passwords or installing malware.</p>
                     <div class="table-title-with-buttons">
                         <h3>Outdated Javascript Libraries Table</h3>    
                         ${createTableButtons("Outdated Javascript Libraries", "outdatedSoftwareTable")}
@@ -872,7 +873,7 @@
                             markdownContentHTML += `
                                 <h2>SSL/TLS Lucky13 - <span class="cvss-green">2.6</span> </h2>
                                 <p><strong>Description</strong></p>
-                                <p>Lucky13 is a cryptographic side-channel attack targeting CBC mode ciphers in SSL/TLS. It exploits timing discrepancies in MAC validation to reveal secrets.</p>
+                                <p>Lucky13 is a cryptographic side-channel attack that targets CBC mode ciphers in SSL/TLS. It exploits timing discrepancies in MAC (Message Authentication Code) validation to reveal secrets.</p>
                                 <div class="table-title-with-buttons">
                                     <h3>Lucky 13 Vulnerability Summary</h3>
                                     <!-- Placeholder for creating table buttons. Replace with your actual button creation logic -->
@@ -934,7 +935,7 @@
                                         markdownContentHTML += `
                                             <h2>RC4 Cipher Suites Supported (Bar Mitzvah) - <span class="${"cvss-yellow"}">4.3</span> </h2>
                                             <p><strong>Description</strong></p>
-                                            <p>The server was discovered to support the insecure RC4 cipher, which allows connections with a weak cipher. An attacker may be able to decrypt communications between the affected service and clients, and gain access to any data transmitted between the client and the server. The impact of successful exploitation is dependent on the information that is sent to and from the server.</p>
+                                            <p>The server was found to support the insecure RC4 cipher, which permits connections using a weak cipher. An attacker might be able to decrypt communications between the affected service and its clients, thereby gaining access to any data transmitted between them. The impact of a successful exploitation depends on the nature of the information being exchanged with the server.</p>
                                             <div class="table-title-with-buttons">
                                                 <h3>RC4 Cipher Vulnerability Table</h3>    
                                                 ${createTableButtons("RC4 Cipher Vulnerabilities", "rc4CipherVulnerabilityTable")}
@@ -994,7 +995,7 @@
                                         markdownContentHTML += `
                                             <h2>SSL/TLS Protocol Initialization Vector Implementation Information Disclosure Vulnerability (BEAST) - <span class="${"cvss-blue"}">0</span> </h2>
                                             <p><strong>Description</strong></p>
-                                            <p>A vulnerability exists in SSL 3.0 and TLS 1.0 that could allow information disclosure, if an attacker intercepts encrypted traffic served from an affected system.</p>
+                                            <p>A vulnerability in SSL 3.0 and TLS 1.0 could allow for information disclosure if an attacker intercepts encrypted traffic from an affected system.</p>
                                             <div class="table-title-with-buttons">
                                                 <h3>BEAST Vulnerability Table</h3>    
                                                 ${createTableButtons("BEAST Vulnerabilities", "beastVulnerabilityTable")}
@@ -1112,7 +1113,7 @@
                                         markdownContentHTML += `
                                             <h2>SSL/TLS - SSLv3 Padding Oracle On Downgraded Legacy Encryption Vulnerability (POODLE) - <span class="${"cvss-yellow"}">5.9</span></h2>
                                             <p><strong>Description</strong></p>
-                                            <p>The server was discovered to affected by a Man-in-the-Middle (MitM) information disclosure vulnerability known as POODLE. An attacker may be able to decrypt communications between the affected service and clients, and gain access to any data transmitted between the client and the server. The impact of successful exploitation is dependent on the information that is sent to and from the server.</p>
+                                            <p>The server was found to be vulnerable to a Man-in-the-Middle (MitM) information disclosure vulnerability known as POODLE. An attacker could potentially decrypt communications between the affected service and its clients, gaining access to any data transmitted between them. The impact of a successful exploitation depends on the nature of the information exchanged with the server.</p>
                                             <div class="table-title-with-buttons">
                                                 <h3>POODLE Vulnerability Table</h3>    
                                                 ${createTableButtons("POODLE Vulnerabilities", "poodleVulnerabilityTable")}
@@ -1173,7 +1174,7 @@
                                         markdownContentHTML += `
                                             <h2>SSL/TLS EXPORT_RSA <= 512-bit Cipher Suites Supported (FREAK) - <span class="${"cvss-yellow"}">4.3</span></h2>
                                             <p><strong>Description</strong></p>
-                                            <p>The remote host supports EXPORT_RSA cipher suites with keys less than or equal to 512 bits. An attacker can factor a 512-bit RSA modulus in a short amount of time. A Man-in-the-Middle attacker may be able to downgrade the session to use EXPORT_RSA cipher suites (e.g. CVE-2015-0204). Thus, it is recommended to remove support for weak cipher suites.</p>
+                                            <p>The remote host supports EXPORT_RSA cipher suites with keys of 512 bits or less. An attacker can factor a 512-bit RSA modulus relatively quickly. A Man-in-the-Middle attacker could potentially downgrade the session to use EXPORT_RSA cipher suites (e.g., CVE-2015-0204). Therefore, it is recommended to disable support for these weak cipher suites to enhance security.</p>
                                             <div class="table-title-with-buttons">
                                                 <h3>FREAK Vulnerability Table</h3>    
                                                 ${createTableButtons("FREAK Vulnerabilities", "freakVulnerabilityTable")}
@@ -1236,7 +1237,7 @@
                                         markdownContentHTML += `
                                             <h2>SSL/TLS - Medium Strength Encryption Supported (SWEET32) - <span class="${"cvss-yellow"}">5</span></h2>
                                             <p><strong>Description</strong></p>
-                                            <p>The SSL services listed below supported cipher suite combinations using 3DES encryption with a 64-bit block size. Block cipher algorithms are still commonly used in protocols such as SSH and IPSec, and VPN services such as OpenVPN use such algorithms as AES, 3DES, and Blowfish, all of which can encrypt data in ‘blocks’.</p>
+                                            <p>The SSL services listed below support cipher suite combinations that utilise 3DES encryption, which has a 64-bit block size. Block cipher algorithms like these are still widely used in protocols such as SSH and IPSec. Additionally, VPN services such as OpenVPN employ algorithms including AES, 3DES, and Blowfish, all of which encrypt data in 'blocks'.</p>
                                             <div class="table-title-with-buttons">
                                                 <h3>SWEET32 Vulnerability Table</h3>    
                                                 ${createTableButtons("SWEET32 Vulnerabilities", "sweet32VulnerabilityTable")}
@@ -1309,7 +1310,7 @@
                 markdownContentHTML += `
                     <h2>SSL/TLS Version 1.0/1.1 Supported - <span class="${"cvss-yellow"}">6.1</span></h2>
                     <p><strong>Description</strong></p>
-                    <p>The configuration of the TLS services supports versions prior to TLSv1.2. The previous versions (TLSv1.0 and TLSv1.1) are no longer considered by the security community to be sufficiently cryptographically secure. Many vulnerabilities, such as BEAST, POODLE, and DROWN, have been discovered, causing industry experts to recommend the disabling of the older SSL and TLS protocols.</p>
+                    <p>The configuration of the TLS services on the server supports versions earlier than TLSv1.2, specifically TLSv1.0 and TLSv1.1. These versions are no longer considered cryptographically secure by the security community, due to the discovery of numerous vulnerabilities such as BEAST, POODLE, and DROWN. As a result, industry experts strongly recommend disabling these older SSL and TLS protocols to enhance security.</p>
                     <div class="table-title-with-buttons">
                         <h3>SSL/TLS Version 1.0/1.1 Table</h3>    
                         ${createTableButtons("SSL/TLS Version 1.0/1.1 Table", "tlsVulnerabilityTable")}
@@ -1348,64 +1349,9 @@
 
 
 
-            let sslTableHeadersRendered = false;
-            let sslTableContent = '';
-
-            searchResults.forEach(hostObj => {
-                hostObj.ports.forEach(portObj => {
-                    // Check if the port has ssl-ciphers information
-                    if (portObj['ssl-ciphers']) {
-                        for (let version in portObj['ssl-ciphers']) {
-                            // Check for SSLv2 and SSLv3
-                            if (version === 'SSLv2' || version === 'SSLv3') {
-                                // Render table headers if not already done
-                                if (!sslTableHeadersRendered) {
-                                    markdownContentHTML += `
-                                        <h2>SSL/TLS - Version 2 and 3 Protocol Detection - <span class="${"cvss-orange"}">7.1</span></h2>
-                                        <p><strong>Description</strong></p>
-                                        <p>The SSL services listed below-supported connections using the outdated version 2.0 and/or 3.0 protocol. These two deprecated protocols have a number of well-known and well-documented cryptographic flaws, some of which have been successfully exploited to extract cleartext data from captured cipher text.</p>
-                                        <div class="table-title-with-buttons">
-                                            <h3>SSL/TLS Version 1.0/1.1 Table</h3>    
-                                            ${createTableButtons("SSL/TLS - Version 2 and 3 Table", "sslVulnerabilityTable")}
-                                        </div>
-
-                                        <table id="sslVulnerabilityTable">
-                                            <thead>
-                                                <tr>
-                                                    <th>Host</th>
-                                                    <th>Port</th>
-                                                    <th>SSL Version</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                    `;
-                                    sslTableHeadersRendered = true;
-                                }
-
-                                // Add a row for each vulnerable port
-                                sslTableContent += `
-                                    <tr>
-                                                                        <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
-
-                                        <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
-
-                                        <td>${version}</td>
-                                    </tr>
-                                `;
-                            }
-                        }
-                    }
-                });
-            });
-
-            // Append table content if headers were rendered
-            if (sslTableHeadersRendered) {
-                markdownContentHTML += sslTableContent + `</tbody></table><br><br><hr><br><br>`;
-            }
-
-
             let rsaKeyTableHeadersRendered = false;
             let rsaKeyTableContent = '';
+
 
             searchResults.forEach(hostObj => {
                 hostObj.ports.forEach(portObj => {
@@ -1416,7 +1362,7 @@
                             markdownContentHTML += `
                                 <h2>SSL/TLS - Certificate: Weak RSA Keys - <span class="${"cvss-green"}">2.9</span></h2>
                                 <p><strong>Description</strong></p>
-                                <p>The server is using an SSL certificate with a public key considered weak due to its short length. Such keys can potentially be exploited as part of a Man-in-the-Middle (MitM) attack.</p>
+                                <p>The server is using an SSL certificate with a public key that is considered weak due to its short length. This vulnerability could potentially be exploited in a Man-in-the-Middle (MitM) attack, where an attacker intercepts and possibly alters the communication between two parties who believe they are directly communicating with each other.</p>
                                 <div class="table-title-with-buttons">
                                     <h3>Weak RSA Keys Table</h3>    
                                     ${createTableButtons("Weak RSA Keys Table", "weakRsaKeyTable")}
@@ -1468,7 +1414,7 @@
                                 markdownContentHTML += `
                                     <h2>SSL/TLS - Certificate Expiry - <span class="${"cvss-yellow"}">5</span></h2>
                                     <p><strong>Description</strong></p>
-                                    <p>The affected SSL services had certificates that have expired and are therefore considered invalid, no longer providing the intended authenticity. Users can no longer confirm the identity of the service via a Certificate Authority (CA), and will consequently receive an error when attempting to browse to the server. There have been a number of high profile cases where expired certificates have resulted in wide-spread disruption and damage to a company's reputation. For example, a connection between two servers may rely on a valid certificate, and fail when the certificate cannot be verified. If this connection is responsible for a business-critical function, then the consequences could be significant.</p>
+                                    <p>The SSL services in question are using certificates that have expired, rendering them invalid and no longer capable of providing the intended authentication. As a result, users are unable to verify the identity of the service through a Certificate Authority (CA), and will consequently encounter an error when attempting to connect to the server. There have been numerous high-profile incidents where expired certificates have caused widespread disruption and damaged companies' reputations. For instance, if a connection between two servers relies on a valid certificate, it may fail when the certificate cannot be verified. If this connection is essential for business-critical functions, the resulting consequences could be significant.</p>
                                     <div class="table-title-with-buttons">
                                         <h3>SSL/TLS - Certificate Expiry Table</h3>    
                                         ${createTableButtons("SSL/TLS - Certificate Expiry Table", "certificateExpiryTable")}
@@ -1521,7 +1467,7 @@
                                 markdownContentHTML += `
                                     <h2>SSL/TLS - Certificate Signed Using Weak Hashing Algorithm - <span class="${"cvss-green"}">3.9</span></h2>
                                     <p><strong>Description</strong></p>
-                                    <p>The server is using an insecure SSL certificate signed using a hashing algorithm no longer considered to be cryptographically secure. It is possible (albeit unlikely) that an attacker can leverage this issue to create a fake SSL certificate with an identical signature, exploiting weaknesses in the hashing algorithm.</p>
+                                    <p>The server is using an SSL certificate signed with a hashing algorithm that is no longer considered cryptographically secure. Although it is unlikely, there is a possibility that an attacker could exploit this vulnerability to create a counterfeit SSL certificate with an identical signature by exploiting weaknesses in the hashing algorithm.</p>
                                     <div class="table-title-with-buttons">
                                         <h3>Weak Hashing Algorithm Table</h3>    
                                         ${createTableButtons("Weak Hashing Algorithm Table", "weakHashAlgorithmTable")}
@@ -1572,7 +1518,7 @@
                                 markdownContentHTML += `
                                     <h2>SSL/TLS - Certificate with Wrong Hostname - <span class="${"cvss-yellow"}">5</span></h2>
                                     <p><strong>Description</strong></p>
-                                    <p>The services listed below were configured with SSL certificates that contained a mismatch between the ‘Common Name’ (CN) attribute and the identified hostname. The CN attribute is the name for which the SSL certificate has been created to protect, so the certificate is only valid if this matches the hostname of the system to which the user is connecting. A mismatch could suggest a misconfiguration when creating and implementing the certificate. Any configuration issue could introduce exploitable vulnerabilities, as the certificate may not provide the intended levels of assurance of the hosts’ identity, or the integrity and confidentiality of any associated data.</p>
+                                    <p>The services listed below were configured with SSL certificates that exhibit a mismatch between the 'Common Name' (CN) attribute and the identified hostname. The CN attribute specifies the name for which the SSL certificate is intended to provide protection. Therefore, the certificate is only valid if this attribute matches the hostname of the system to which users are connecting. A mismatch may indicate a misconfiguration during the creation or implementation of the certificate. Such a configuration error could introduce exploitable vulnerabilities, as the certificate may not provide the intended levels of assurance regarding the host’s identity, or the integrity and confidentiality of the associated data.</p>
                                     <div class="table-title-with-buttons">
                                         <h3>Certificate with Wrong Hostname Table</h3>    
                                         ${createTableButtons("Certificate with Wrong Hostname Table", "wrongHostnameTable")}
@@ -1632,7 +1578,7 @@
                             markdownContentHTML += `
                                 <h2>SSL Certificate Chain Contains Certificates Expiring Soon - <span class="${"cvss-blue"}">0</span></h2>
                                 <p><strong>Description</strong></p>
-                                <p>The remote host has an SSL certificate chain with one or more SSL certificates that are going to expire soon. Failure to renew these certificates before the expiration date may result in Denial-of-Service for users.</p>
+                                <p>The remote host has an SSL certificate chain that includes one or more certificates due to expire soon. If these certificates are not renewed before their expiration dates, users may experience a Denial-of-Service, as secure connections to the host will no longer be considered valid.</p>
                                 <div class="table-title-with-buttons">
                                     <h3>Certificates Close To Being Expired Table</h3>    
                                     ${createTableButtons("Expiring Certificates Table", "closeExpireTable")}
@@ -1681,7 +1627,7 @@
                             markdownContentHTML += `
                                 <h2>Excessive SSL/TLS Certificate Validity - <span class="${"cvss-green"}">2.9</span></h2>
                                 <p><strong>Description</strong></p>
-                                <p>Certificates issued after March 1st, 2018, may not be valid for longer than 825 days. Certificates issued after July 1st, 2016, through March 1st, 2018, may not be valid for longer than 39 months. Certificates issued on or before July 1st, 2016, may not be valid for longer than 60 months.</p>
+                                <p>Certificates issued after March 1st, 2018, are subject to a validity period of no more than 825 days. For certificates issued between July 1st, 2016, and March 1st, 2018, the maximum validity period is 39 months. Certificates issued on or before July 1st, 2016, may have a validity period of up to 60 months. These restrictions are in place to enhance security and trust in the certificate ecosystem.</p>
                                 <div class="table-title-with-buttons">
                                     <h3>Long Validity Period Certificates Table</h3>
                                     ${createTableButtons("Long Validity Period Certificates Table", "tooLongExpireTable")}
@@ -1732,7 +1678,7 @@
                             markdownContentHTML += `
                                 <h2>SSL/TLS - Self-Signed Certificate - <span class="${"cvss-yellow"}">6.4</span></h2>
                                 <p><strong>Description</strong></p>
-                                <p>The SSL certificate used by the affected services was self-signed (not signed by a genuine Certificate Authority). Self-signed certificates are signed using their own private key, rather than requesting a key from an established authority, and therefore do not provide the intended assurances of authenticity.</p>
+                                <p>The SSL certificate used by the affected services was self-signed, meaning it was signed using its own private key rather than being issued by a recognized Certificate Authority. Consequently, these certificates do not provide the intended assurances of authenticity typically offered by certificates validated through established authorities. This can lead to security warnings in browsers and diminish trust from users, as the identity of the server cannot be independently verified.</p>
                                 <div class="table-title-with-buttons">
                                     <h3>Self-Signed Certificates Table</h3>
                                     ${createTableButtons("Self-Signed Certificates Table", "selfSignedTable")}
@@ -1784,7 +1730,7 @@
                             markdownContentHTML += `
                                 <h2>Wildcard TLS Certificate in Use - <span class="${"cvss-blue"}">0</span></h2>
                                 <p><strong>Description</strong></p>
-                                <p>The target host was discovered to use a wildcard TLS certificate. Wildcard certificates are public-key certificates that can be used with multiple subdomains of a domain. However, the underlying private key would have to be distributed across several sites. If one of the sites is compromised, the compromised private key can be used to target the rest of the group's sites.</p>
+                                <p>The target host was found to be using a wildcard TLS certificate, which is a type of public-key certificate that can secure multiple subdomains of a domain. While this provides the convenience of managing a single certificate for multiple services, it also entails distributing the underlying private key across various sites. If any one of these sites is compromised, the breached private key could potentially be used to target all other sites within the domain group, increasing the security risk significantly.</p>
                                 <div class="table-title-with-buttons">
                                     <h3>Wildcard Certificates Table</h3>
                                     ${createTableButtons("Wildcard Certificates Table", "wildcardTable")}
@@ -1837,7 +1783,7 @@
                             markdownContentHTML += `
                                 <h2>Unencrypted Communication (HTTP) - <span class="${"cvss-yellow"}">6.9</span></h2>
                                 <p><strong>Description</strong></p>
-                                <p>The application does not send sensitive data over an encrypted connection. This means that sensitive data, such as credentials, are sent in cleartext. An attacker on the same network as a victim would be able to see any traffic sent to the application in cleartext.</p>
+                                <p>The application does not transmit sensitive data over an encrypted connection, which means that sensitive information, such as credentials, is sent in cleartext. Consequently, an attacker on the same network as a user could easily intercept and view any traffic sent to the application, posing a significant security risk.</p>
                                 <div class="table-title-with-buttons">
                                     <h3>Unencrypted Communication Table</h3>    
                                     ${createTableButtons("Unencrypted Communication Table", "unencryptedCommunicationTable")}
@@ -1887,7 +1833,7 @@
                             markdownContentHTML += `
                                 <h2>Direct IP Address Access - <span class="${"cvss-blue"}">0</span></h2>
                                 <p><strong>Description</strong></p>
-                                <p>The application is accessible by directly browsing to the IP address. Accessing the application in this manner may bypass some defences that have been implemented to secure the application, such security headers and Web Application Firewall defences. It may also be possible to access web pages that are not accessible via FQDN access, like default web server pages.</p>
+                                <p>The application is accessible by directly navigating to its IP address. This method of access may circumvent various security measures that have been implemented, such as security headers and Web Application Firewall defenses. Furthermore, accessing the application through its IP address might expose web pages that are not accessible via its Fully Qualified Domain Name (FQDN), including default web server pages, potentially leading to security vulnerabilities.</p>
                                 <div class="table-title-with-buttons">
                                     <h3>Direct IP Address Access Table</h3>    
                                     ${createTableButtons("Direct IP Address Access Table", "directIpAccessTable")}
@@ -1940,7 +1886,7 @@
                                     markdownContentHTML += `
                                         <h2><span class="${"cvss-orange"}"></span>Public-Facing Administrative Login Page - <span class="${"cvss-orange"}">8.5</span></h2>
                                         <p><strong>Description</strong></p>
-                                        <p>The application hosts a publicly available administrative login page. These login pages are high-priority targets for an attacker due to the sensitive functionality that usually sits behind them. It is often possible to add/delete users, edit the page template, and make application-critical changes through administrative login portals. If an attacker were able to brute-force or gain access to valid credentials through another attack vector, they would control the sensitive functionalities.</p>
+                                        <pThe application hosts a publicly available administrative login page, making it a high-priority target for attackers due to the sensitive functionalities typically accessible through it. These functionalities often include the ability to add or delete users, edit page templates, and make critical changes to the application. If an attacker successfully brute-forces their way in or acquires valid credentials through another method, they could gain control over these sensitive functionalities, posing a significant security risk.</p>
                                         <div class="table-title-with-buttons">
                                             <h3>Administrative Login Page Table</h3>    
                                             ${createTableButtons("Administrative Login Page Table", "adminLoginPageTable")}
@@ -2097,74 +2043,74 @@
 
 
             let cookieTableHeadersRendered = false;
-let cookieTableContent = '';
+            let cookieTableContent = '';
 
-searchResults.forEach(hostObj => {
-    hostObj.ports.forEach(portObj => {
-        // Check if there are cookies
-        if (portObj.cookies) {
-            // Render table headers if not already done
-            if (!cookieTableHeadersRendered) {
-                markdownContentHTML += `
-                    <h2>Non-Session Controlling Cookies Missing Security Flags - <span class="${"cvss-blue"}">0</span></h2>
-                    <p><strong>Description</strong></p>
-                    <p>Cookies used within the application are missing certain security attributes when set in the client’s browser. The lack of such protections may vary in outcome based upon what each respective cookie is used for, so should be reviewed on a per-cookie basis.</p>
-                    <div class="table-title-with-buttons">
-                        <h3>Cookie Table</h3>    
-                        ${createTableButtons("Cookie Table", "cookieTable")}
-                    </div>
-                    <table id="cookieTable">
-                        <thead>
-                            <tr>
-                                <th>Host</th>
-                                <th>Port</th>
-                                <th>Cookie Name</th>
-                                <th>Current Value(s)</th>
-                                <th>Recommended Value(s)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-                cookieTableHeadersRendered = true;
-            }
+            searchResults.forEach(hostObj => {
+                hostObj.ports.forEach(portObj => {
+                    // Check if there are cookies
+                    if (portObj.cookies) {
+                        // Render table headers if not already done
+                        if (!cookieTableHeadersRendered) {
+                            markdownContentHTML += `
+                                <h2>Non-Session Controlling Cookies Missing Security Flags - <span class="${"cvss-blue"}">0</span></h2>
+                                <p><strong>Description</strong></p>
+                                <p>Cookies used within the application are missing certain security attributes when set in the client’s browser. The lack of such protections may vary in outcome based upon what each respective cookie is used for, so should be reviewed on a per-cookie basis.</p>
+                                <div class="table-title-with-buttons">
+                                    <h3>Cookie Table</h3>    
+                                    ${createTableButtons("Cookie Table", "cookieTable")}
+                                </div>
+                                <table id="cookieTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Host</th>
+                                            <th>Port</th>
+                                            <th>Cookie Name</th>
+                                            <th>Current Value(s)</th>
+                                            <th>Recommended Value(s)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
+                            cookieTableHeadersRendered = true;
+                        }
 
-            // Add a row for each cookie of this host and port
-            portObj.cookies.forEach(cookie => {
-                let misconfiguredFlags = [];
-                let currentValues = [];
-                let recommendedValues = [];
+                        // Add a row for each cookie of this host and port
+                        portObj.cookies.forEach(cookie => {
+                            let misconfiguredFlags = [];
+                            let currentValues = [];
+                            let recommendedValues = [];
 
-                if (!cookie.secure) {
-                    misconfiguredFlags.push("Secure");
-                    currentValues.push("Secure=False");
-                    recommendedValues.push("Secure=True");
-                }
+                            if (!cookie.secure) {
+                                misconfiguredFlags.push("Secure");
+                                currentValues.push("Secure=False");
+                                recommendedValues.push("Secure=True");
+                            }
 
-                if (!cookie.httpOnly) {
-                    misconfiguredFlags.push("HttpOnly");
-                    currentValues.push("HttpOnly=False");
-                    recommendedValues.push("HttpOnly=True");
-                }
+                            if (!cookie.httpOnly) {
+                                misconfiguredFlags.push("HttpOnly");
+                                currentValues.push("HttpOnly=False");
+                                recommendedValues.push("HttpOnly=True");
+                            }
 
-                if (cookie.sameSite === "None" || cookie.sameSite === "Lax") {
-                    misconfiguredFlags.push("SameSite");
-                    currentValues.push(`SameSite=${cookie.sameSite}`);
-                    recommendedValues.push("SameSite=Strict");
-                }
+                            if (cookie.sameSite === "None" || cookie.sameSite === "Lax") {
+                                misconfiguredFlags.push("SameSite");
+                                currentValues.push(`SameSite=${cookie.sameSite}`);
+                                recommendedValues.push("SameSite=Strict");
+                            }
 
-                cookieTableContent += `
-                    <tr>
-                        <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
-                        <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
-                        <td>${cookie.name}</td>
-                        <td>${currentValues.join(", ") || "None"}</td>
-                        <td>${recommendedValues.join(", ") || "All Set"}</td>
-                    </tr>
-                `;
+                            cookieTableContent += `
+                                <tr>
+                                    <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${(hostObj.host.length == 2) ? `${hostObj.host[0]} (${hostObj.host[1]})` : hostObj.host[0]}</td>
+                                    <td><a href="#accordion-${hostObj.host[0]}-${portObj.port}" onclick="openAccordion('accordion-${hostObj.host[0]}-${portObj.port}')" style="text-decoration: none; color: inherit;">${portObj.port}</a></td>
+                                    <td>${cookie.name}</td>
+                                    <td>${currentValues.join(", ") || "None"}</td>
+                                    <td>${recommendedValues.join(", ") || "All Set"}</td>
+                                </tr>
+                            `;
+                        });
+                    }
+                });
             });
-        }
-    });
-});
 
 
             // Append table content if headers were rendered
@@ -2236,6 +2182,10 @@ searchResults.forEach(hostObj => {
     
             accordionContainer.appendChild(markdownAccordionButton);
             accordionContainer.appendChild(markdownPanel);    
+
+
+
+
 
 
 
@@ -2383,7 +2333,7 @@ searchResults.forEach(hostObj => {
 
                         contentHTML += `<br><h2>Interesting Directories and Files</h2>
                         <p><strong>Description</strong></p>
-                        <p>The table below shows any intrestings directories found. These directories may disclose software versions or reveal sensitive information.</p>`;
+                        <p>The table below shows any interesting directories found. These directories may disclose software versions or reveal sensitive information. Each of these directories has returned different content lengths.</p>`;
                         
                         contentHTML += `<table border="1" style="width:100%; border-collapse: collapse;"><thead><tr>`;
 
@@ -2434,7 +2384,7 @@ searchResults.forEach(hostObj => {
                         <br>
                         <h2>Software</h2>
                         <p><strong>Description</strong></p>
-                        <p>This table shows the software running on the port. This tool does not check the End-of-Life status of software.
+                        <p>This table displays the software running on this website. These versions have been identified through the website's console. This tool may miss libraries and does not check the End-of-Life status of the software. The consultant should investigate these further.</p>
                             <table>
                                 <thead>
                                     <tr>
@@ -2509,7 +2459,7 @@ searchResults.forEach(hostObj => {
                         <br>
                             <h2>HTTP Methods</h2>
                             <p><strong>Description</strong></p>
-                            <p>The table below contains the allowed HTTP methods. These need to be double checked by the consultant.</p>
+                            <p>The table below contains the allowed HTTP methods. These need to be confirmed by the consultant.</p>
                             <table>
                                 <thead>
                                     <tr>
@@ -2544,7 +2494,7 @@ searchResults.forEach(hostObj => {
                         <br>
                         <h2>Cookies</h2>
                         <p><strong>Description</strong></p>
-                        <p>This table shows the cookies on the website. One of these may be a session cookie which would be a medium severity if the flags are not set correctly.</p>
+                        <p>This table shows the value of the flags on each cookie for a website. It should be noted that this tool does not check for session cookies.</p>
                             <table>
                                 <thead>
                                     <tr>
@@ -2578,22 +2528,11 @@ searchResults.forEach(hostObj => {
                         contentHTML += `</tbody></table><br><hr>`;
                     }
 
-                    if (portObj.renegotiation){
-                        // Cookie Table
-                        contentHTML += `
-                        <br>
-                        <h2>Secure Client-Initiated Renegotiation</h2>
-                        <p><strong>Description</strong></p>
-                        <p>This port may potentially be vulnerable to Secure Client-Initiated Renegotiation, further manual checks are needed to confirm this.</p>
                 
-                        <br><hr>`;
-                    }
-
-
 
                     if (portObj['ssl-ciphers']) {
                         contentHTML += `<br><h2>Cipher Suites</h2><p><strong>Description</strong></p>`;
-                        contentHTML += `<p>This section displays all the currently running cipher suites. It is recommended to enable only TLS 1.2 and TLS 1.3, ensuring that no weak ciphers are available. It should be noted that this tool does not look for SSLv2 or SSLv3.</p>`;
+                        contentHTML += `<p>This section displays all the currently running cipher suites. It is recommended to enable only TLS 1.2 and TLS 1.3 to ensure that no weak ciphers are available. It should be noted that this tool does not check for SSLv2 or SSLv3. Therefore, a full cipher scan should be run alongside this tool.</p>`;
                         // Loop through each SSL/TLS version
                         for (const [version, ciphers] of Object.entries(portObj['ssl-ciphers'])) {
                             contentHTML += `<h3>${version} Ciphers</h3>`;
@@ -2673,7 +2612,7 @@ searchResults.forEach(hostObj => {
 
                         contentHTML += `<br><h2>SSL Certificate</h2>`;
                         contentHTML += `<p><strong>Description</strong></p>`;
-                        contentHTML += `<p>This section shows the configuration of the SSL certificate. This needs to be manually checked by the Consultant as sometimes this tool will get the Public key information inncorrect.</p>`;
+                        contentHTML += `<p>This section shows the configuration of the SSL certificate. This again will need to be manually checked by the Consultant. </p>`;
                         contentHTML += `
                             <table>
                                 <thead>
@@ -2744,24 +2683,6 @@ searchResults.forEach(hostObj => {
                         panel.style.maxHeight = panel.scrollHeight + 'px';
                     }
                 }
-
-
-            
-            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
             

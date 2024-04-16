@@ -1,7 +1,5 @@
 import re
 
-
-
 def process_nmap_file(file):
     try:
         file_content = file.read().decode('utf-8')
