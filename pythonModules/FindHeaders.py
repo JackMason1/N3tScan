@@ -437,7 +437,7 @@ def check_port(IP_addresses):
                                     if "Access-Control-Allow-Origin" in response.headers:
                                         wildcardCheck = response.headers.get("Access-Control-Allow-Origin")
                                         if wildcardCheck == "*":
-                                            port_data['headers_to_remove']["Access-Control-Allow-Origin"] = wildcardCheck
+                                            (port_data['headers_to_remove'])["Access-Control-Allow-Origin"] = {'data': '*', 'vulnerability': 'Wild Card in use', 'colour': 'green', 'Current-version': None, 'Latest-version': None}
 
                                     min_content_length = 200
                                     if len(response.content) < min_content_length:
